@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"net/http"
@@ -10,13 +10,10 @@ type Config struct {
 	Port string
 }
 
-func NewServer(
-	config *Config,
-) http.Handler {
+func NewServer() http.Handler {
 	mux := http.NewServeMux()
 	addRoutes(
 		mux,
-		*config,
 	)
 	var handler http.Handler = mux
 	handler = middleware.Logging(handler)

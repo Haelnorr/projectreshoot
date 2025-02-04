@@ -1,2 +1,6 @@
 tmp/
 projectreshoot
+node_modules/
+static/css/output.css
+view/*/*_templ.go
+view/*/*_templ.txt

@@ -1,0 +1,45 @@
+package layout
+
+import "projectreshoot/view/component"
+
+templ Global() {
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Project Reshoot</title>
+    <link href="/static/css/output.css" rel="stylesheet" />
+    <script src="https://unpkg.com/franken-ui@1.1.0/dist/js/core.iife.js" type="module"></script>
+    <script src="https://unpkg.com/franken-ui@1.1.0/dist/js/icon.iife.js" type="module"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"
+        integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+        crossorigin="anonymous"></script>
+    <script>
+        const htmlElement = document.documentElement;
+
+        if (
+            localStorage.getItem("mode") === "dark" ||
+            (!("mode" in localStorage) &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches)
+        ) {
+            htmlElement.classList.add("dark");
+        } else {
+            htmlElement.classList.remove("dark");
+        }
+
+        htmlElement.classList.add(
+            localStorage.getItem("theme") || "uk-theme-catppuccin",
+        );
+    </script>
+</head>
+
+<body class="bg-background text-foreground">
+    @component.Navbar()
+    <h1 class="text-3xl text-foreground font-bold underline">Hello world! </h1>
+    { children... }
+</body>
+
+</html>
+}

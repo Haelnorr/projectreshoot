@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 
 func addRoutes(
 	mux *http.ServeMux,
-	config Config,
 ) {
+	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic()))
 	mux.Handle("GET /", handlers.HandleRoot())
 }

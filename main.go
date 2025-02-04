@@ -2,26 +2,28 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"projectreshoot/server"
 	"sync"
 	"time"
 )
 
-func run(ctx context.Context, w io.Writer, args []string) error {
+func run(ctx context.Context, w io.Writer) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	config := &Config{
+	config := &server.Config{
 		Host: "",
 		Port: "3333",
 	}
 
-	srv := NewServer(config)
+	srv := server.NewServer()
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(config.Host, config.Port),
 		Handler: srv,
@@ -51,9 +53,12 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	return nil
 }
 
+//go:embed static/*
+var static embed.FS
+
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Stdout, os.Args); err != nil {
+	if err := run(ctx, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}

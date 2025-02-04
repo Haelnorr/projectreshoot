@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
+	"projectreshoot/view/page"
 )
 
 func HandleRoot() http.Handler {
@@ -12,8 +12,7 @@ func HandleRoot() http.Handler {
 				http.NotFound(w, r)
 				return
 			}
-			templ := template.Must(template.ParseFiles("templates/index.html"))
-			templ.Execute(w, nil)
+			page.Index().Render(r.Context(), w)
 		},
 	)
 }

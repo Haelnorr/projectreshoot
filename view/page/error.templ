@@ -1,0 +1,30 @@
+package page
+
+import "projectreshoot/view/layout"
+
+templ Error(code string, err string, message string) {
+	@layout.Global() {
+		<div
+			class="grid absolute left-0 right-0 top-0 bottom-0 z-[-1] 
+            place-content-center bg-base px-4"
+		>
+			<div class="text-center">
+				<h1
+					class="text-9xl text-text"
+				>{ code }</h1>
+				<p
+					class="text-2xl font-bold tracking-tight text-subtext1
+                    sm:text-4xl"
+				>{ err }</p>
+				<p
+					class="mt-4 text-subtext0"
+				>{ message }</p>
+				<a
+					href="/"
+					class="mt-6 inline-block rounded-lg bg-mauve px-5 py-3 
+                    text-sm text-crust hover:bg-mauve/75"
+				>Go to homepage</a>
+			</div>
+		</div>
+	}
+}

@@ -1,0 +1,5 @@
+<div x-show=\"open\" x-transition class=\"absolute w-full bg-mantle sm:hidden\"><div class=\"px-4 py-6\"><ul class=\"space-y-1\">
+<li><a href=\"
+\" class=\"block rounded-lg  px-4 py-2 text-lg\n                            bg-surface0 text-text transition hover:bg-surface2\">
+</a></li>
+</ul></div><div class=\"px-4 pb-6\"><ul class=\"space-y-1\"><li class=\"flex justify-center items-center gap-2\"><a class=\"w-26 px-4 py-2 rounded-lg\n                        bg-green text-mantle  transition hover:bg-green/75\n                        text-center\" href=\"/login\">Login</a> <a class=\"w-26 px-4 py-2 rounded-lg\n                        bg-blue text-mantle  transition hover:bg-blue/75\n                        text-center\" href=\"/register\">Register</a></li></ul></div></div>

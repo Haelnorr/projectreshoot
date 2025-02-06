@@ -1,21 +1,18 @@
 package layout
 
-import "projectreshoot/view/component"
+import "projectreshoot/view/component/nav"
 
 templ Global() {
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Project Reshoot</title>
-    <link href="/static/css/output.css" rel="stylesheet" />
-    <script src="https://unpkg.com/htmx.org@2.0.4"
-        integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
-        crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/alpinejs" defer></script>
-    <script>
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>Project Reshoot</title>
+			<link href="/static/css/output.css" rel="stylesheet"/>
+			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+			<script src="https://unpkg.com/alpinejs" defer></script>
+			<script>
         document.documentElement.classList.toggle(
             "dark",
             localStorage.currentTheme === "dark" ||
@@ -29,13 +26,10 @@ templ Global() {
         //localStorage.currentTheme = "dark";
         //localStorage.removeItem("theme");
     </script>
-</head>
-
-<body class="bg-base text-text ubuntu-mono-regular">
-    @component.Navbar()
-    <h1 class="text-3xl font-bold underline">Hello world! </h1>
-    { children... }
-</body>
-
-</html>
+		</head>
+		<body class="bg-base text-text ubuntu-mono-regular">
+			@nav.Navbar()
+			{ children... }
+		</body>
+	</html>
 }

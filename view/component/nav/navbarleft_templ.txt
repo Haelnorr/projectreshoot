@@ -1,0 +1,5 @@
+<nav aria-label=\"Global\" class=\"hidden sm:block\"><ul class=\"flex items-center gap-6 text-xl\">
+<li><a class=\"text-subtext1 hover:text-green transition\" href=\"
+\">
+</a></li>
+</ul></nav>

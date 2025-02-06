@@ -1,10 +1,19 @@
 package layout
 
 import "projectreshoot/view/component/nav"
+import "projectreshoot/view/component/footer"
 
 templ Global() {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html
+		lang="en"
+		x-data="{
+            theme: localStorage.getItem('theme')
+            || localStorage.setItem('theme', 'system')}"
+		x-init="$watch('theme', (val) => localStorage.setItem('theme', val))"
+		x-bind:class="{'dark': theme === 'dark' || (theme === 'system' &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches)}"
+	>
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -13,23 +22,24 @@ templ Global() {
 			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 			<script src="https://unpkg.com/alpinejs" defer></script>
 			<script>
-        document.documentElement.classList.toggle(
-            "dark",
-            localStorage.currentTheme === "dark" ||
-            (
-                !("theme" in localStorage) &&
-                window.matchMedia("(prefers-color-scheme: dark)").matches
-            ),
-        );
-
-        //localStorage.currentTheme = "light";
-        //localStorage.currentTheme = "dark";
-        //localStorage.removeItem("theme");
-    </script>
+                document.documentElement.classList.toggle(
+                    "dark",
+                    localStorage.currentTheme === "dark" ||
+                    (
+                        !("theme" in localStorage) &&
+                        window.matchMedia("(prefers-color-scheme: dark)").matches
+                    ),
+                );
+            </script>
 		</head>
 		<body class="bg-base text-text ubuntu-mono-regular">
-			@nav.Navbar()
-			{ children... }
+			<div id="main-content" class="flex flex-col h-screen justify-between">
+				@nav.Navbar()
+				<div id="page-content" class="mb-auto">
+					{ children... }
+				</div>
+				@footer.Footer()
+			</div>
 		</body>
 	</html>
 }

@@ -4,15 +4,18 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/pkg/errors"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"projectreshoot/server"
 	"sync"
 	"time"
+
+	"projectreshoot/db"
+	"projectreshoot/server"
+
+	"github.com/pkg/errors"
 )
 
 func run(ctx context.Context, w io.Writer) error {
@@ -24,7 +27,12 @@ func run(ctx context.Context, w io.Writer) error {
 		return errors.Wrap(err, "server.GetConfig")
 	}
 
-	srv := server.NewServer(config)
+	conn, err := db.ConnectToDatabase(&config.TursoURL, &config.TursoToken)
+	if err != nil {
+		return errors.Wrap(err, "db.ConnectToDatabase")
+	}
+
+	srv := server.NewServer(config, conn)
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(config.Host, config.Port),
 		Handler: srv,

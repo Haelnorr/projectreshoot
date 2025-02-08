@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"net/http"
 	"projectreshoot/handlers"
 	"projectreshoot/view/page"
@@ -9,6 +10,7 @@ import (
 func addRoutes(
 	mux *http.ServeMux,
 	config *Config,
+	conn *sql.DB,
 ) {
 	// Static files
 	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic()))
@@ -21,5 +23,5 @@ func addRoutes(
 
 	// Login page and handlers
 	mux.Handle("GET /login", handlers.HandleLoginPage(config.TrustedHost))
-	mux.Handle("POST /login", handlers.HandleLoginRequest())
+	mux.Handle("POST /login", handlers.HandleLoginRequest(conn))
 }

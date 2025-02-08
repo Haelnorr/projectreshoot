@@ -2,6 +2,10 @@ package form
 
 import "fmt"
 
+// Login Form. If loginError is not an empty string, it will display the
+// contents of loginError to the user.
+// If loginError is "Username or password incorrect" it will also show
+// error icons on the username and password field
 templ LoginForm(loginError string) {
 	{{
 	var errCreds string

@@ -13,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Validates the username matches a user in the database and the password
+// is correct. Returns the corresponding user
 func validateLogin(conn *sql.DB, r *http.Request) (db.User, error) {
 	formUsername := r.FormValue("username")
 	formPassword := r.FormValue("password")
@@ -29,6 +31,7 @@ func validateLogin(conn *sql.DB, r *http.Request) (db.User, error) {
 	return user, nil
 }
 
+// Returns result of the "Remember me?" checkbox as a boolean
 func checkRememberMe(r *http.Request) bool {
 	rememberMe := r.FormValue("remember-me")
 	if rememberMe == "on" {
@@ -38,7 +41,10 @@ func checkRememberMe(r *http.Request) bool {
 	}
 }
 
-func HandleLoginRequest(conn *sql.DB) http.Handler {
+// Handles an attempted login request. On success will return a HTMX redirect
+// and on fail will return the login form again, passing the error to the
+// template for user feedback
+func HandleLoginRequest(conn *sql.DB, secretKey string) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
@@ -62,6 +68,8 @@ func HandleLoginRequest(conn *sql.DB) http.Handler {
 	)
 }
 
+// Handles a request to view the login page. Will attempt to set "pagefrom"
+// cookie so a successful login can redirect the user to the page they came
 func HandleLoginPage(trustedHost string) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {

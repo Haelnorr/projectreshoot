@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"embed"
+	"flag"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,16 +20,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-func run(ctx context.Context, w io.Writer) error {
+// Initializes and runs the server
+func run(ctx context.Context, w io.Writer, args []string) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	config, err := server.GetConfig()
+	config, err := server.GetConfig(args)
 	if err != nil {
 		return errors.Wrap(err, "server.GetConfig")
 	}
 
-	conn, err := db.ConnectToDatabase(&config.TursoURL, &config.TursoToken)
+	conn, err := db.ConnectToDatabase(&config.TursoDBName, &config.TursoToken)
 	if err != nil {
 		return errors.Wrap(err, "db.ConnectToDatabase")
 	}
@@ -36,6 +39,12 @@ func run(ctx context.Context, w io.Writer) error {
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(config.Host, config.Port),
 		Handler: srv,
+	}
+
+	// TEST: runs function for testing in dev if --test flag true
+	if args[1] == "true" {
+		test(config, conn, httpServer)
+		return nil
 	}
 
 	go func() {
@@ -65,9 +74,15 @@ func run(ctx context.Context, w io.Writer) error {
 //go:embed static/*
 var static embed.FS
 
+// Start of runtime. Parse commandline arguments & flags, Initializes context
+// and starts the server
 func main() {
+	port := flag.String("port", "", "Override port")
+	test := flag.Bool("test", false, "Run test function")
+	flag.Parse()
+	args := []string{*port, strconv.FormatBool(*test)}
 	ctx := context.Background()
-	if err := run(ctx, os.Stdout); err != nil {
+	if err := run(ctx, os.Stdout, args); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}

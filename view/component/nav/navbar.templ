@@ -1,10 +1,11 @@
 package nav
 
 type NavItem struct {
-	name string
-	href string
+	name string // Label to display
+	href string // Link reference
 }
 
+// Return the list of navbar links
 func getNavItems() []NavItem {
 	return []NavItem{
 		{
@@ -14,6 +15,7 @@ func getNavItems() []NavItem {
 	}
 }
 
+// Returns the navbar template fragment
 templ Navbar() {
 	{{ navItems := getNavItems() }}
 	<div x-data="{ open: false }">

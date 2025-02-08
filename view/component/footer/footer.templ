@@ -5,6 +5,7 @@ type FooterItem struct {
 	href string
 }
 
+// Specify the links to show in the footer
 func getFooterItems() []FooterItem {
 	return []FooterItem{
 		{
@@ -18,6 +19,7 @@ func getFooterItems() []FooterItem {
 	}
 }
 
+// Returns the template fragment for the Footer
 templ Footer() {
 	<footer class="bg-mantle mt-10">
 		<div

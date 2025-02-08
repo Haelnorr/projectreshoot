@@ -2,6 +2,9 @@ package page
 
 import "projectreshoot/view/layout"
 
+// Page template for Error pages. Error code should be a HTTP status code as
+// a string, and err should be the corresponding response title.
+// Message is a custom error message displayed below the code and error.
 templ Error(code string, err string, message string) {
 	@layout.Global() {
 		<div

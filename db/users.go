@@ -9,12 +9,13 @@ import (
 )
 
 type User struct {
-	ID            int
-	Username      string
-	Password_hash string
-	Created_at    int64
+	ID            int    // Integer ID (index primary key)
+	Username      string // Username (unique)
+	Password_hash string // Bcrypt password hash
+	Created_at    int64  // Epoch timestamp when the user was added to the database
 }
 
+// Uses bcrypt to set the users Password_hash from the given password
 func (user *User) SetPassword(conn *sql.DB, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -30,6 +31,7 @@ func (user *User) SetPassword(conn *sql.DB, password string) error {
 	return nil
 }
 
+// Uses bcrypt to check if the given password matches the users Password_hash
 func (user *User) CheckPassword(password string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password_hash), []byte(password))
 	if err != nil {
@@ -38,6 +40,8 @@ func (user *User) CheckPassword(password string) error {
 	return nil
 }
 
+// Queries the database for a user matching the given username.
+// Query is case insensitive
 func GetUserFromUsername(conn *sql.DB, username string) (User, error) {
 	query := `SELECT id, username, password_hash, created_at FROM users 
 	          WHERE username = ? COLLATE NOCASE`

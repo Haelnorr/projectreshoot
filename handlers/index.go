@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"net/http"
+
 	"projectreshoot/view/page"
 )
 
+// Handles responses to the / path. Also serves a 404 Page for paths that
+// don't have explicit handlers
 func HandleRoot() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {

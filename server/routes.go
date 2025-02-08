@@ -3,10 +3,12 @@ package server
 import (
 	"database/sql"
 	"net/http"
+
 	"projectreshoot/handlers"
 	"projectreshoot/view/page"
 )
 
+// Add all the handled routes to the mux
 func addRoutes(
 	mux *http.ServeMux,
 	config *Config,
@@ -23,5 +25,5 @@ func addRoutes(
 
 	// Login page and handlers
 	mux.Handle("GET /login", handlers.HandleLoginPage(config.TrustedHost))
-	mux.Handle("POST /login", handlers.HandleLoginRequest(conn))
+	mux.Handle("POST /login", handlers.HandleLoginRequest(conn, config.SecretKey))
 }

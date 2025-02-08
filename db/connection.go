@@ -8,6 +8,7 @@ import (
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
+// Returns a database connection handle for the Turso DB
 func ConnectToDatabase(primaryUrl *string, authToken *string) (*sql.DB, error) {
 	url := fmt.Sprintf("libsql://%s.turso.io?authToken=%s", *primaryUrl, *authToken)
 

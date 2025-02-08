@@ -4,7 +4,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/joho/godotenv"
+	"github.com/pkg/errors"
 	"io"
 	"net"
 	"net/http"
@@ -19,12 +19,12 @@ func run(ctx context.Context, w io.Writer) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	config := &server.Config{
-		Host: "",
-		Port: "3333",
+	config, err := server.GetConfig()
+	if err != nil {
+		return errors.Wrap(err, "server.GetConfig")
 	}
 
-	srv := server.NewServer()
+	srv := server.NewServer(config)
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(config.Host, config.Port),
 		Handler: srv,
@@ -58,10 +58,6 @@ func run(ctx context.Context, w io.Writer) error {
 var static embed.FS
 
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		panic(err.Error())
-	}
 	ctx := context.Background()
 	if err := run(ctx, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)

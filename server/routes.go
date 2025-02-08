@@ -8,6 +8,7 @@ import (
 
 func addRoutes(
 	mux *http.ServeMux,
+	config *Config,
 ) {
 	// Static files
 	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic()))
@@ -19,6 +20,6 @@ func addRoutes(
 	mux.Handle("GET /about", handlers.HandlePage(page.About()))
 
 	// Login page and handlers
-	mux.Handle("GET /login", handlers.HandleLoginPage())
+	mux.Handle("GET /login", handlers.HandleLoginPage(config.TrustedHost))
 	mux.Handle("POST /login", handlers.HandleLoginRequest())
 }

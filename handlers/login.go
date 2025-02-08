@@ -65,10 +65,10 @@ func HandleLoginRequest() http.Handler {
 	)
 }
 
-func HandleLoginPage() http.Handler {
+func HandleLoginPage(trustedHost string) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			cookies.SetPageFrom(w, r)
+			cookies.SetPageFrom(w, r, trustedHost)
 			page.Login().Render(r.Context(), w)
 		},
 	)

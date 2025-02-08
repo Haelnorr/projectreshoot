@@ -3,7 +3,6 @@ package cookies
 import (
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 )
 
@@ -18,15 +17,14 @@ func CheckPageFrom(w http.ResponseWriter, r *http.Request) string {
 	return pageFrom
 }
 
-func SetPageFrom(w http.ResponseWriter, r *http.Request) {
+func SetPageFrom(w http.ResponseWriter, r *http.Request, trustedHost string) {
 	referer := r.Referer()
 	parsedURL, err := url.Parse(referer)
 	if err != nil {
 		return
 	}
 	var pageFrom string
-	expectedHost := os.Getenv("TRUSTED_HOST")
-	if parsedURL.Path == "" || parsedURL.Host != expectedHost {
+	if parsedURL.Path == "" || parsedURL.Host != trustedHost {
 		pageFrom = "/"
 	} else {
 		pageFrom = parsedURL.Path

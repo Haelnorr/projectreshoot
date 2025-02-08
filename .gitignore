@@ -1,3 +1,4 @@
+.env
 tmp/
 projectreshoot
 static/css/output.css

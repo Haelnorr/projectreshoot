@@ -61,7 +61,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	}
 	defer conn.Close()
 
-	srv := server.NewServer(config, conn)
+	srv := server.NewServer(config, logger, conn)
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(config.Host, config.Port),
 		Handler: srv,

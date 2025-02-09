@@ -5,10 +5,16 @@ import (
 	"net/http"
 
 	"projectreshoot/middleware"
+
+	"github.com/rs/zerolog"
 )
 
 // Returns a new http.Handler with all the routes and middleware added
-func NewServer(config *Config, conn *sql.DB) http.Handler {
+func NewServer(
+	config *Config,
+	logger *zerolog.Logger,
+	conn *sql.DB,
+) http.Handler {
 	mux := http.NewServeMux()
 	addRoutes(
 		mux,
@@ -16,6 +22,6 @@ func NewServer(config *Config, conn *sql.DB) http.Handler {
 		conn,
 	)
 	var handler http.Handler = mux
-	handler = middleware.Logging(handler)
+	handler = middleware.Logging(logger, handler)
 	return handler
 }

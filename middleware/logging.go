@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 // Wraps the http.ResponseWriter, adding a statusCode field
@@ -19,7 +20,7 @@ func (w *wrappedWriter) WriteHeader(statusCode int) {
 }
 
 // Middleware to add logs to console with details of the request
-func Logging(next http.Handler) http.Handler {
+func Logging(logger *zerolog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		wrapped := &wrappedWriter{
@@ -27,6 +28,10 @@ func Logging(next http.Handler) http.Handler {
 			statusCode:     http.StatusOK,
 		}
 		next.ServeHTTP(wrapped, r)
-		log.Println(wrapped.statusCode, r.Method, r.URL.Path, time.Since(start))
+		logger.Info().
+			Int("status", wrapped.statusCode).
+			Str("method", r.Method).
+			Str("resource", r.URL.Path).
+			Dur("time_elapsed", time.Since(start)).Msg("Served")
 	})
 }

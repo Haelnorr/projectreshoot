@@ -74,7 +74,11 @@ func GetLogger(
 	} else {
 		output = consoleWriter
 	}
-	logger := zerolog.New(output).With().Timestamp().Caller().Logger().Level(logLevel)
+	logger := zerolog.New(output).
+		With().
+		Timestamp().
+		Logger().
+		Level(logLevel)
 
 	return &logger, nil
 }

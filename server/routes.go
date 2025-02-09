@@ -6,11 +6,14 @@ import (
 
 	"projectreshoot/handlers"
 	"projectreshoot/view/page"
+
+	"github.com/rs/zerolog"
 )
 
 // Add all the handled routes to the mux
 func addRoutes(
 	mux *http.ServeMux,
+	logger *zerolog.Logger,
 	config *Config,
 	conn *sql.DB,
 ) {
@@ -25,5 +28,9 @@ func addRoutes(
 
 	// Login page and handlers
 	mux.Handle("GET /login", handlers.HandleLoginPage(config.TrustedHost))
-	mux.Handle("POST /login", handlers.HandleLoginRequest(conn, config.SecretKey))
+	mux.Handle("POST /login", handlers.HandleLoginRequest(
+		logger,
+		conn,
+		config.SecretKey,
+	))
 }

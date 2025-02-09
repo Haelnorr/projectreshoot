@@ -18,6 +18,7 @@ func NewServer(
 	mux := http.NewServeMux()
 	addRoutes(
 		mux,
+		logger,
 		config,
 		conn,
 	)

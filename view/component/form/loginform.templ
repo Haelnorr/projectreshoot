@@ -16,7 +16,11 @@ templ LoginForm(loginError string) {
 	}
 	xdata := fmt.Sprintf("{credentialError: %s, errorMessage: '%s'}", errCreds, loginError)
 	}}
-	<form hx-post="/login">
+	<form
+		hx-post="/login"
+		x-data="{ submitted: false, buttontext: 'Login' }"
+		x-on:htmx:xhr:loadstart="submitted=true;buttontext='Loading...'"
+	>
 		<div
 			class="grid gap-y-4"
 			x-data={ xdata }
@@ -127,11 +131,14 @@ templ LoginForm(loginError string) {
 				</div>
 			</div>
 			<button
+				x-bind:disabled="submitted"
+				x-text="buttontext"
 				type="submit"
 				class="w-full py-3 px-4 inline-flex justify-center items-center 
                     gap-x-2 rounded-lg border border-transparent transition
-                    bg-green hover:bg-green/75 text-mantle hover:cursor-pointer"
-			>Login</button>
+                    bg-green hover:bg-green/75 text-mantle hover:cursor-pointer
+                    disabled:bg-green/60 disabled:cursor-default"
+			></button>
 		</div>
 	</form>
 }

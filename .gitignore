@@ -1,4 +1,5 @@
 .env
+.logs/
 tmp/
 projectreshoot
 static/css/output.css

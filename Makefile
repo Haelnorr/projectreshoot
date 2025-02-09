@@ -16,7 +16,7 @@ dev:
 
 test:
 	go mod tidy && \
-	go run . --port 3232 --test
+	go run . --port 3232 --test --loglevel trace
 
 clean:
 	go clean

@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
@@ -27,7 +26,13 @@ func (user *User) SetPassword(conn *sql.DB, password string) error {
 	if err != nil {
 		return errors.Wrap(err, "conn.Exec")
 	}
-	fmt.Println(result)
+	ra, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "result.RowsAffected")
+	}
+	if ra != 1 {
+		return errors.New("Password was not updated")
+	}
 	return nil
 }
 

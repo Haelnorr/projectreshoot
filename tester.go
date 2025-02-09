@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"projectreshoot/server"
+
+	"github.com/rs/zerolog"
 )
 
 // This function will only be called if the --test commandline flag is set.
@@ -13,5 +15,10 @@ import (
 // conflicts on the default 3333. Useful for testing things out during dev.
 // If you add code here, remember to run:
 // `git update-index --assume-unchanged tester.go` to avoid tracking changes
-func test(config *server.Config, conn *sql.DB, srv *http.Server) {
+func test(
+	config *server.Config,
+	logger *zerolog.Logger,
+	conn *sql.DB,
+	srv *http.Server,
+) {
 }

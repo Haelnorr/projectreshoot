@@ -16,6 +16,7 @@ func GenerateAccessToken(
 	config *server.Config,
 	user *db.User,
 	fresh bool,
+	rememberMe bool,
 ) (string, error) {
 	issuedAt := time.Now().Unix()
 	expiresAt := issuedAt + (config.AccessTokenExpiry * 60)
@@ -25,15 +26,21 @@ func GenerateAccessToken(
 	} else {
 		freshExpiresAt = issuedAt
 	}
+	var ttl string
+	if rememberMe {
+		ttl = "exp"
+	} else {
+		ttl = "session"
+	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"iss":   config.TrustedHost,
 			"scope": "access",
+			"ttl":   ttl,
 			"iat":   issuedAt,
 			"exp":   expiresAt,
 			"fresh": freshExpiresAt,
 			"sub":   user.ID,
-			"roles": []string{"user", "admin"}, // TODO: add user roles
 		})
 
 	signedToken, err := token.SignedString([]byte(config.SecretKey))
@@ -47,13 +54,21 @@ func GenerateAccessToken(
 func GenerateRefreshToken(
 	config *server.Config,
 	user *db.User,
+	rememberMe bool,
 ) (string, error) {
 	issuedAt := time.Now().Unix()
 	expiresAt := issuedAt + (config.RefreshTokenExpiry * 60)
+	var ttl string
+	if rememberMe {
+		ttl = "exp"
+	} else {
+		ttl = "session"
+	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"iss":   config.TrustedHost,
 			"scope": "refresh",
+			"ttl":   ttl,
 			"jti":   uuid.New(),
 			"iat":   issuedAt,
 			"exp":   expiresAt,

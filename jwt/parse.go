@@ -26,6 +26,10 @@ func ParseAccessToken(config *server.Config, tokenString string) (AccessToken, e
 	if err != nil {
 		return AccessToken{}, errors.Wrap(err, "checkTokenIssuer")
 	}
+	ttl, err := getTokenTTL(claims["ttl"])
+	if err != nil {
+		return AccessToken{}, errors.Wrap(err, "getTokenTTL")
+	}
 	scope, err := getTokenScope(claims["scope"])
 	if err != nil {
 		return AccessToken{}, errors.Wrap(err, "getTokenScope")
@@ -45,19 +49,14 @@ func ParseAccessToken(config *server.Config, tokenString string) (AccessToken, e
 	if err != nil {
 		return AccessToken{}, errors.Wrap(err, "getFreshTime")
 	}
-	roles, err := getTokenRoles(claims["roles"])
-	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "getTokenRoles")
-	}
 
 	token := AccessToken{
 		ISS:   issuer,
-		Scope: scope,
+		TTL:   ttl,
 		EXP:   expiry,
 		IAT:   issuedAt,
 		SUB:   subject,
 		Fresh: fresh,
-		Roles: roles,
 	}
 
 	return token, nil
@@ -78,6 +77,10 @@ func ParseRefreshToken(config *server.Config, tokenString string) (RefreshToken,
 	issuer, err := checkTokenIssuer(config.TrustedHost, claims["iss"])
 	if err != nil {
 		return RefreshToken{}, errors.Wrap(err, "checkTokenIssuer")
+	}
+	ttl, err := getTokenTTL(claims["ttl"])
+	if err != nil {
+		return RefreshToken{}, errors.Wrap(err, "getTokenTTL")
 	}
 	scope, err := getTokenScope(claims["scope"])
 	if err != nil {
@@ -100,12 +103,12 @@ func ParseRefreshToken(config *server.Config, tokenString string) (RefreshToken,
 	}
 
 	token := RefreshToken{
-		ISS:   issuer,
-		Scope: scope,
-		EXP:   expiry,
-		IAT:   issuedAt,
-		SUB:   subject,
-		JTI:   jti,
+		ISS: issuer,
+		TTL: ttl,
+		EXP: expiry,
+		IAT: issuedAt,
+		SUB: subject,
+		JTI: jti,
 	}
 
 	return token, nil
@@ -151,7 +154,6 @@ func checkTokenExpired(expiry interface{}) (int64, error) {
 
 // Check if a token has a valid issuer. Returns the issuer if valid
 func checkTokenIssuer(trustedHost string, issuer interface{}) (string, error) {
-	// Check issuer
 	issuerVal, ok := issuer.(string)
 	if !ok {
 		return "", errors.New("Missing or invalid 'iss' claim")
@@ -169,6 +171,18 @@ func getTokenScope(scope interface{}) (string, error) {
 		return "", errors.New("Missing or invalid 'scope' claim")
 	}
 	return scopeStr, nil
+}
+
+// Get the TTL of the token, either "session" or "exp"
+func getTokenTTL(ttl interface{}) (string, error) {
+	ttlStr, ok := ttl.(string)
+	if !ok {
+		return "", errors.New("Missing or invalid 'ttl' claim")
+	}
+	if ttlStr != "exp" && ttlStr != "session" {
+		return "", errors.New("TTL value is not recognised")
+	}
+	return ttlStr, nil
 }
 
 // Get the time the token was issued at
@@ -198,23 +212,6 @@ func getTokenSubject(sub interface{}) (int, error) {
 		return 0, errors.New("Missing or invalid 'sub' claim")
 	}
 	return int(subject), nil
-}
-
-// Get the roles of the token subject
-func getTokenRoles(roles interface{}) ([]string, error) {
-	rolesIfSlice, ok := roles.([]interface{})
-	if !ok {
-		return nil, errors.New("Missing or invalid 'roles' claim")
-	}
-	rolesSlice := []string{}
-	for _, role := range rolesIfSlice {
-		if str, ok := role.(string); ok {
-			rolesSlice = append(rolesSlice, str)
-		} else {
-			return nil, errors.New("Malformed 'roles' claim")
-		}
-	}
-	return rolesSlice, nil
 }
 
 // Get the JTI of the token

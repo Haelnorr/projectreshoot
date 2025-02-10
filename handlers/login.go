@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 
+	"projectreshoot/config"
 	"projectreshoot/cookies"
 	"projectreshoot/db"
 	"projectreshoot/view/component/form"
@@ -45,6 +45,7 @@ func checkRememberMe(r *http.Request) bool {
 // and on fail will return the login form again, passing the error to the
 // template for user feedback
 func HandleLoginRequest(
+	config *config.Config,
 	logger *zerolog.Logger,
 	conn *sql.DB,
 	secretKey string,
@@ -61,13 +62,12 @@ func HandleLoginRequest(
 				return
 			}
 
-			// TODO: login success, use the userID to set the session
 			rememberMe := checkRememberMe(r)
-			fmt.Printf(
-				"Login success, user: %v - remember me?: %t\n",
-				user.Username,
-				rememberMe,
-			)
+			err = cookies.SetTokenCookies(w, r, config, &user, rememberMe)
+			if err != nil {
+				form.LoginForm(err.Error()).Render(r.Context(), w)
+				logger.Warn().Caller().Err(err).Msg("Failed to set token cookies")
+			}
 
 			pageFrom := cookies.CheckPageFrom(w, r)
 			w.Header().Set("HX-Redirect", pageFrom)

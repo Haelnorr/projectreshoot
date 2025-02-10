@@ -30,6 +30,7 @@ func addRoutes(
 	// Login page and handlers
 	mux.Handle("GET /login", handlers.HandleLoginPage(config.TrustedHost))
 	mux.Handle("POST /login", handlers.HandleLoginRequest(
+		config,
 		logger,
 		conn,
 		config.SecretKey,

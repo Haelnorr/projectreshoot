@@ -3,7 +3,6 @@ package cookies
 import (
 	"net/http"
 	"net/url"
-	"time"
 )
 
 // Check the value of "pagefrom" cookie, delete the cookie, and return the value
@@ -13,8 +12,7 @@ func CheckPageFrom(w http.ResponseWriter, r *http.Request) string {
 		return "/"
 	}
 	pageFrom := pageFromCookie.Value
-	deleteCookie := &http.Cookie{Name: "pagefrom", Value: "", Expires: time.Unix(0, 0)}
-	http.SetCookie(w, deleteCookie)
+	DeleteCookie(w, pageFromCookie.Name, pageFromCookie.Path)
 	return pageFrom
 }
 
@@ -35,6 +33,6 @@ func SetPageFrom(w http.ResponseWriter, r *http.Request, trustedHost string) {
 	} else {
 		pageFrom = parsedURL.Path
 	}
-	pageFromCookie := &http.Cookie{Name: "pagefrom", Value: pageFrom}
+	pageFromCookie := &http.Cookie{Name: "pagefrom", Value: pageFrom, Path: "/"}
 	http.SetCookie(w, pageFromCookie)
 }

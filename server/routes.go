@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
+	"projectreshoot/config"
 	"projectreshoot/handlers"
 	"projectreshoot/view/page"
 
@@ -14,7 +15,7 @@ import (
 func addRoutes(
 	mux *http.ServeMux,
 	logger *zerolog.Logger,
-	config *Config,
+	config *config.Config,
 	conn *sql.DB,
 ) {
 	// Static files

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
+	"projectreshoot/config"
 	"projectreshoot/middleware"
 
 	"github.com/rs/zerolog"
@@ -11,7 +12,7 @@ import (
 
 // Returns a new http.Handler with all the routes and middleware added
 func NewServer(
-	config *Config,
+	config *config.Config,
 	logger *zerolog.Logger,
 	conn *sql.DB,
 ) http.Handler {

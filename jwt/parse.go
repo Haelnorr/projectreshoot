@@ -2,8 +2,9 @@ package jwt
 
 import (
 	"fmt"
-	"projectreshoot/server"
 	"time"
+
+	"projectreshoot/config"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -13,7 +14,7 @@ import (
 // Parse an access token and return a struct with all the claims. Does validation on
 // all the claims, including checking if it is expired, has a valid issuer, and
 // has the correct scope.
-func ParseAccessToken(config *server.Config, tokenString string) (AccessToken, error) {
+func ParseAccessToken(config *config.Config, tokenString string) (AccessToken, error) {
 	claims, err := parseToken(config.SecretKey, tokenString)
 	if err != nil {
 		return AccessToken{}, errors.Wrap(err, "parseToken")
@@ -49,6 +50,10 @@ func ParseAccessToken(config *server.Config, tokenString string) (AccessToken, e
 	if err != nil {
 		return AccessToken{}, errors.Wrap(err, "getFreshTime")
 	}
+	jti, err := getTokenJTI(claims["jti"])
+	if err != nil {
+		return AccessToken{}, errors.Wrap(err, "getTokenJTI")
+	}
 
 	token := AccessToken{
 		ISS:   issuer,
@@ -57,6 +62,8 @@ func ParseAccessToken(config *server.Config, tokenString string) (AccessToken, e
 		IAT:   issuedAt,
 		SUB:   subject,
 		Fresh: fresh,
+		JTI:   jti,
+		Scope: scope,
 	}
 
 	return token, nil
@@ -65,7 +72,7 @@ func ParseAccessToken(config *server.Config, tokenString string) (AccessToken, e
 // Parse a refresh token and return a struct with all the claims. Does validation on
 // all the claims, including checking if it is expired, has a valid issuer, and
 // has the correct scope.
-func ParseRefreshToken(config *server.Config, tokenString string) (RefreshToken, error) {
+func ParseRefreshToken(config *config.Config, tokenString string) (RefreshToken, error) {
 	claims, err := parseToken(config.SecretKey, tokenString)
 	if err != nil {
 		return RefreshToken{}, errors.Wrap(err, "parseToken")
@@ -103,12 +110,13 @@ func ParseRefreshToken(config *server.Config, tokenString string) (RefreshToken,
 	}
 
 	token := RefreshToken{
-		ISS: issuer,
-		TTL: ttl,
-		EXP: expiry,
-		IAT: issuedAt,
-		SUB: subject,
-		JTI: jti,
+		ISS:   issuer,
+		TTL:   ttl,
+		EXP:   expiry,
+		IAT:   issuedAt,
+		SUB:   subject,
+		JTI:   jti,
+		Scope: scope,
 	}
 
 	return token, nil

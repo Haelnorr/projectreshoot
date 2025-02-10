@@ -1,9 +1,10 @@
-package server
+package config
 
 import (
 	"errors"
 	"fmt"
 	"os"
+
 	"projectreshoot/logging"
 
 	"github.com/joho/godotenv"
@@ -14,6 +15,7 @@ type Config struct {
 	Host               string        // Host to listen on
 	Port               string        // Port to listen on
 	TrustedHost        string        // Domain/Hostname to accept as trusted
+	SSL                bool          // Flag for SSL Mode
 	TursoDBName        string        // DB Name for Turso DB/Branch
 	TursoToken         string        // Bearer token for Turso DB/Branch
 	SecretKey          string        // Secret key for signing tokens
@@ -78,6 +80,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		Host:               host,
 		Port:               port,
 		TrustedHost:        os.Getenv("TRUSTED_HOST"),
+		SSL:                GetEnvBool("SSL_MODE", false),
 		TursoDBName:        os.Getenv("TURSO_DB_NAME"),
 		TursoToken:         os.Getenv("TURSO_AUTH_TOKEN"),
 		SecretKey:          os.Getenv("SECRET_KEY"),

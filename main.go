@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"projectreshoot/config"
 	"projectreshoot/db"
 	"projectreshoot/logging"
 	"projectreshoot/server"
@@ -26,7 +27,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	config, err := server.GetConfig(args)
+	config, err := config.GetConfig(args)
 	if err != nil {
 		return errors.Wrap(err, "server.GetConfig")
 	}

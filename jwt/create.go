@@ -3,8 +3,8 @@ package jwt
 import (
 	"time"
 
+	"projectreshoot/config"
 	"projectreshoot/db"
-	"projectreshoot/server"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -13,11 +13,11 @@ import (
 
 // Generates an access token for the provided user
 func GenerateAccessToken(
-	config *server.Config,
+	config *config.Config,
 	user *db.User,
 	fresh bool,
 	rememberMe bool,
-) (string, error) {
+) (tokenStr string, exp int64, err error) {
 	issuedAt := time.Now().Unix()
 	expiresAt := issuedAt + (config.AccessTokenExpiry * 60)
 	var freshExpiresAt int64
@@ -37,6 +37,7 @@ func GenerateAccessToken(
 			"iss":   config.TrustedHost,
 			"scope": "access",
 			"ttl":   ttl,
+			"jti":   uuid.New(),
 			"iat":   issuedAt,
 			"exp":   expiresAt,
 			"fresh": freshExpiresAt,
@@ -45,17 +46,17 @@ func GenerateAccessToken(
 
 	signedToken, err := token.SignedString([]byte(config.SecretKey))
 	if err != nil {
-		return "", errors.Wrap(err, "token.SignedString")
+		return "", 0, errors.Wrap(err, "token.SignedString")
 	}
-	return signedToken, nil
+	return signedToken, expiresAt, nil
 }
 
 // Generates a refresh token for the provided user
 func GenerateRefreshToken(
-	config *server.Config,
+	config *config.Config,
 	user *db.User,
 	rememberMe bool,
-) (string, error) {
+) (tokenStr string, exp int64, err error) {
 	issuedAt := time.Now().Unix()
 	expiresAt := issuedAt + (config.RefreshTokenExpiry * 60)
 	var ttl string
@@ -77,7 +78,7 @@ func GenerateRefreshToken(
 
 	signedToken, err := token.SignedString([]byte(config.SecretKey))
 	if err != nil {
-		return "", errors.Wrap(err, "token.SignedString")
+		return "", 0, errors.Wrap(err, "token.SignedString")
 	}
-	return signedToken, nil
+	return signedToken, expiresAt, nil
 }

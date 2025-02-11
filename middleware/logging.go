@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -29,13 +28,10 @@ func Logging(logger *zerolog.Logger, next http.Handler) http.Handler {
 			statusCode:     http.StatusOK,
 		}
 		next.ServeHTTP(wrapped, r)
-		if !strings.Contains(r.URL.Path, "favicon.ico") &&
-			!strings.Contains(r.URL.Path, "output.css") {
-			logger.Info().
-				Int("status", wrapped.statusCode).
-				Str("method", r.Method).
-				Str("resource", r.URL.Path).
-				Dur("time_elapsed", time.Since(start)).Msg("Served")
-		}
+		logger.Info().
+			Int("status", wrapped.statusCode).
+			Str("method", r.Method).
+			Str("resource", r.URL.Path).
+			Dur("time_elapsed", time.Since(start)).Msg("Served")
 	})
 }

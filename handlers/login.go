@@ -63,7 +63,7 @@ func HandleLoginRequest(
 			}
 
 			rememberMe := checkRememberMe(r)
-			err = cookies.SetTokenCookies(w, r, config, &user, rememberMe)
+			err = cookies.SetTokenCookies(w, r, config, &user, true, rememberMe)
 			if err != nil {
 				form.LoginForm(err.Error()).Render(r.Context(), w)
 				logger.Warn().Caller().Err(err).Msg("Failed to set token cookies")

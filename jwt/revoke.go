@@ -18,8 +18,8 @@ func RevokeToken(conn *sql.DB, t Token) error {
 	return nil
 }
 
-// Check if a token has been revoked
-func CheckRevoked(conn *sql.DB, t Token) (bool, error) {
+// Check if a token has been revoked. Returns true if not revoked.
+func CheckTokenNotRevoked(conn *sql.DB, t Token) (bool, error) {
 	jti := t.GetJTI()
 	query := `SELECT 1 FROM jwtblacklist WHERE jti = ? LIMIT 1`
 	rows, err := conn.Query(query, jti)
@@ -27,5 +27,5 @@ func CheckRevoked(conn *sql.DB, t Token) (bool, error) {
 		return false, errors.Wrap(err, "conn.Exec")
 	}
 	revoked := rows.Next()
-	return revoked, nil
+	return !revoked, nil
 }

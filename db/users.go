@@ -69,3 +69,27 @@ func GetUserFromUsername(conn *sql.DB, username string) (User, error) {
 	}
 	return user, nil
 }
+
+// Queries the database for a user matching the given ID.
+func GetUserFromID(conn *sql.DB, id int) (User, error) {
+	query := `SELECT id, username, password_hash, created_at FROM users 
+	          WHERE id = ?`
+	rows, err := conn.Query(query, id)
+	if err != nil {
+		return User{}, errors.Wrap(err, "conn.Query")
+	}
+	defer rows.Close()
+	var user User
+	for rows.Next() {
+		err := rows.Scan(
+			&user.ID,
+			&user.Username,
+			&user.Password_hash,
+			&user.Created_at,
+		)
+		if err != nil {
+			return User{}, errors.Wrap(err, "rows.Scan")
+		}
+	}
+	return user, nil
+}

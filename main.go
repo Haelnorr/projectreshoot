@@ -64,8 +64,11 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 
 	srv := server.NewServer(config, logger, conn)
 	httpServer := &http.Server{
-		Addr:    net.JoinHostPort(config.Host, config.Port),
-		Handler: srv,
+		Addr:              net.JoinHostPort(config.Host, config.Port),
+		Handler:           srv,
+		ReadHeaderTimeout: 2 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	// Runs function for testing in dev if --test flag true

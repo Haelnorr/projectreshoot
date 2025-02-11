@@ -27,7 +27,7 @@ func NewServer(
 	// Add middleware here, must be added in reverse order of execution
 	// i.e. First in list will get executed last during the request handling
 	handler = middleware.Logging(logger, handler)
-	handler = middleware.Authentication(logger, handler)
+	handler = middleware.Authentication(logger, config, conn, handler)
 
 	// Serve the favicon and exluded files before any middleware is added
 	handler = middleware.ExcludedFiles(handler)

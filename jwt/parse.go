@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -14,7 +15,11 @@ import (
 // Parse an access token and return a struct with all the claims. Does validation on
 // all the claims, including checking if it is expired, has a valid issuer, and
 // has the correct scope.
-func ParseAccessToken(config *config.Config, tokenString string) (AccessToken, error) {
+func ParseAccessToken(
+	config *config.Config,
+	conn *sql.DB,
+	tokenString string,
+) (AccessToken, error) {
 	claims, err := parseToken(config.SecretKey, tokenString)
 	if err != nil {
 		return AccessToken{}, errors.Wrap(err, "parseToken")
@@ -66,13 +71,21 @@ func ParseAccessToken(config *config.Config, tokenString string) (AccessToken, e
 		Scope: scope,
 	}
 
+	valid, err := CheckTokenNotRevoked(conn, token)
+	if err != nil || !valid {
+		return AccessToken{}, errors.Wrap(err, "CheckTokenNotRevoked")
+	}
 	return token, nil
 }
 
 // Parse a refresh token and return a struct with all the claims. Does validation on
 // all the claims, including checking if it is expired, has a valid issuer, and
 // has the correct scope.
-func ParseRefreshToken(config *config.Config, tokenString string) (RefreshToken, error) {
+func ParseRefreshToken(
+	config *config.Config,
+	conn *sql.DB,
+	tokenString string,
+) (RefreshToken, error) {
 	claims, err := parseToken(config.SecretKey, tokenString)
 	if err != nil {
 		return RefreshToken{}, errors.Wrap(err, "parseToken")
@@ -119,6 +132,13 @@ func ParseRefreshToken(config *config.Config, tokenString string) (RefreshToken,
 		Scope: scope,
 	}
 
+	valid, err := CheckTokenNotRevoked(conn, token)
+	if err != nil {
+		return RefreshToken{}, errors.Wrap(err, "CheckTokenNotRevoked")
+	}
+	if !valid {
+		return RefreshToken{}, errors.New("Token has been revoked")
+	}
 	return token, nil
 }
 

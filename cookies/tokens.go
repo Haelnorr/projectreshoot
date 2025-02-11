@@ -59,9 +59,10 @@ func SetTokenCookies(
 	r *http.Request,
 	config *config.Config,
 	user *db.User,
+	fresh bool,
 	rememberMe bool,
 ) error {
-	at, atexp, err := jwt.GenerateAccessToken(config, user, true, rememberMe)
+	at, atexp, err := jwt.GenerateAccessToken(config, user, fresh, rememberMe)
 	if err != nil {
 		return errors.Wrap(err, "jwt.GenerateAccessToken")
 	}

@@ -11,7 +11,7 @@ templ Global() {
 		lang="en"
 		x-data="{
             theme: localStorage.getItem('theme')
-            || localStorage.setItem('theme', 'system')}"
+            || 'system'}"
 		x-init="$watch('theme', (val) => localStorage.setItem('theme', val))"
 		x-bind:class="{'dark': theme === 'dark' || (theme === 'system' &&
             window.matchMedia('(prefers-color-scheme: dark)').matches)}"

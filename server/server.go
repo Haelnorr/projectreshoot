@@ -32,5 +32,8 @@ func NewServer(
 	// Serve the favicon and exluded files before any middleware is added
 	handler = middleware.ExcludedFiles(handler)
 	handler = middleware.Favicon(handler)
+
+	// Start the timer for the request chain so logger can have accurate info
+	handler = middleware.StartTimer(handler)
 	return handler
 }

@@ -16,6 +16,9 @@ type Config struct {
 	Port               string        // Port to listen on
 	TrustedHost        string        // Domain/Hostname to accept as trusted
 	SSL                bool          // Flag for SSL Mode
+	ReadHeaderTimeout  int           // Timeout for reading request headers in seconds
+	WriteTimeout       int           // Timeout for writing requests in seconds
+	IdleTimeout        int           // Timeout for idle connections in seconds
 	TursoDBName        string        // DB Name for Turso DB/Branch
 	TursoToken         string        // Bearer token for Turso DB/Branch
 	SecretKey          string        // Secret key for signing tokens
@@ -81,6 +84,9 @@ func GetConfig(args map[string]string) (*Config, error) {
 		Port:               port,
 		TrustedHost:        os.Getenv("TRUSTED_HOST"),
 		SSL:                GetEnvBool("SSL_MODE", false),
+		ReadHeaderTimeout:  GetEnvInt("READ_HEADER_TIMEOUT", 2),
+		WriteTimeout:       GetEnvInt("WRITE_TIMEOUT", 10),
+		IdleTimeout:        GetEnvInt("IDLE_TIMEOUT", 120),
 		TursoDBName:        os.Getenv("TURSO_DB_NAME"),
 		TursoToken:         os.Getenv("TURSO_AUTH_TOKEN"),
 		SecretKey:          os.Getenv("SECRET_KEY"),

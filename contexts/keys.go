@@ -8,4 +8,5 @@ func (c contextKey) String() string {
 
 var (
 	contextKeyAuthorizedUser = contextKey("auth-user")
+	contextKeyRequestTime    = contextKey("req-time")
 )

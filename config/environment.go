@@ -21,12 +21,12 @@ func GetEnvDefault(key string, defaultValue string) string {
 func GetEnvDur(key string, defaultValue time.Duration) time.Duration {
 	val, exists := os.LookupEnv(key)
 	if !exists {
-		return defaultValue
+		return time.Duration(defaultValue)
 	}
 
 	intVal, err := strconv.Atoi(val)
 	if err != nil {
-		return defaultValue
+		return time.Duration(defaultValue)
 	}
 	return time.Duration(intVal)
 

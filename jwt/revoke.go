@@ -23,6 +23,7 @@ func CheckTokenNotRevoked(conn *sql.DB, t Token) (bool, error) {
 	jti := t.GetJTI()
 	query := `SELECT 1 FROM jwtblacklist WHERE jti = ? LIMIT 1`
 	rows, err := conn.Query(query, jti)
+	defer rows.Close()
 	if err != nil {
 		return false, errors.Wrap(err, "conn.Exec")
 	}

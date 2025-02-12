@@ -75,8 +75,11 @@ func ParseAccessToken(
 	}
 
 	valid, err := CheckTokenNotRevoked(conn, token)
-	if err != nil || !valid {
+	if err != nil {
 		return nil, errors.Wrap(err, "CheckTokenNotRevoked")
+	}
+	if !valid {
+		return nil, errors.New("Token has been revoked")
 	}
 	return token, nil
 }

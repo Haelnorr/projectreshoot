@@ -18,6 +18,9 @@ func addRoutes(
 	config *config.Config,
 	conn *sql.DB,
 ) {
+	// Health check
+	mux.HandleFunc("GET /healthz", func(http.ResponseWriter, *http.Request) {})
+
 	// Static files
 	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic()))
 

@@ -17,24 +17,30 @@ templ Global() {
             window.matchMedia('(prefers-color-scheme: dark)').matches)}"
 	>
 		<head>
+			<script>
+                (function () {
+                    let theme = localStorage.getItem("theme") || "system";
+                    if (theme === "system") {
+                        theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                    }
+                    if (theme === "dark") {
+                        document.documentElement.classList.add("dark");
+                    } else {
+                        document.documentElement.classList.remove("dark");
+                    }
+                })();
+            </script>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>Project Reshoot</title>
 			<link href="/static/css/output.css" rel="stylesheet"/>
 			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
 			<script src="https://unpkg.com/alpinejs" defer></script>
-			<script>
-                document.documentElement.classList.toggle(
-                    "dark",
-                    localStorage.currentTheme === "dark" ||
-                    (
-                        !("theme" in localStorage) &&
-                        window.matchMedia("(prefers-color-scheme: dark)").matches
-                    ),
-                );
-            </script>
 		</head>
-		<body class="bg-base text-text ubuntu-mono-regular">
+		<body
+			class="bg-base text-text ubuntu-mono-regular"
+		>
 			<div id="main-content" class="flex flex-col h-screen justify-between">
 				@nav.Navbar()
 				<div id="page-content" class="mb-auto">

@@ -64,7 +64,7 @@ func getAuthenticatedUser(
 			return nil, errors.Wrap(err, "jwt.ParseRefreshToken")
 		}
 		// Refresh token valid, attempt to get a new token pair
-		user, err := refreshAuthTokens(config, conn, w, r, &rT)
+		user, err := refreshAuthTokens(config, conn, w, r, rT)
 		if err != nil {
 			return nil, errors.Wrap(err, "refreshAuthTokens")
 		}

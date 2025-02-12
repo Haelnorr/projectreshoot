@@ -19,48 +19,51 @@ func ParseAccessToken(
 	config *config.Config,
 	conn *sql.DB,
 	tokenString string,
-) (AccessToken, error) {
+) (*AccessToken, error) {
+	if tokenString == "" {
+		return nil, errors.New("Access token string not provided")
+	}
 	claims, err := parseToken(config.SecretKey, tokenString)
 	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "parseToken")
+		return nil, errors.Wrap(err, "parseToken")
 	}
 	expiry, err := checkTokenExpired(claims["exp"])
 	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "checkTokenExpired")
+		return nil, errors.Wrap(err, "checkTokenExpired")
 	}
 	issuer, err := checkTokenIssuer(config.TrustedHost, claims["iss"])
 	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "checkTokenIssuer")
+		return nil, errors.Wrap(err, "checkTokenIssuer")
 	}
 	ttl, err := getTokenTTL(claims["ttl"])
 	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "getTokenTTL")
+		return nil, errors.Wrap(err, "getTokenTTL")
 	}
 	scope, err := getTokenScope(claims["scope"])
 	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "getTokenScope")
+		return nil, errors.Wrap(err, "getTokenScope")
 	}
 	if scope != "access" {
-		return AccessToken{}, errors.New("Token is not an Access token")
+		return nil, errors.New("Token is not an Access token")
 	}
 	issuedAt, err := getIssuedTime(claims["iat"])
 	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "getIssuedTime")
+		return nil, errors.Wrap(err, "getIssuedTime")
 	}
 	subject, err := getTokenSubject(claims["sub"])
 	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "getTokenSubject")
+		return nil, errors.Wrap(err, "getTokenSubject")
 	}
 	fresh, err := getFreshTime(claims["fresh"])
 	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "getFreshTime")
+		return nil, errors.Wrap(err, "getFreshTime")
 	}
 	jti, err := getTokenJTI(claims["jti"])
 	if err != nil {
-		return AccessToken{}, errors.Wrap(err, "getTokenJTI")
+		return nil, errors.Wrap(err, "getTokenJTI")
 	}
 
-	token := AccessToken{
+	token := &AccessToken{
 		ISS:   issuer,
 		TTL:   ttl,
 		EXP:   expiry,
@@ -73,7 +76,7 @@ func ParseAccessToken(
 
 	valid, err := CheckTokenNotRevoked(conn, token)
 	if err != nil || !valid {
-		return AccessToken{}, errors.Wrap(err, "CheckTokenNotRevoked")
+		return nil, errors.Wrap(err, "CheckTokenNotRevoked")
 	}
 	return token, nil
 }
@@ -85,44 +88,47 @@ func ParseRefreshToken(
 	config *config.Config,
 	conn *sql.DB,
 	tokenString string,
-) (RefreshToken, error) {
+) (*RefreshToken, error) {
+	if tokenString == "" {
+		return nil, errors.New("Refresh token string not provided")
+	}
 	claims, err := parseToken(config.SecretKey, tokenString)
 	if err != nil {
-		return RefreshToken{}, errors.Wrap(err, "parseToken")
+		return nil, errors.Wrap(err, "parseToken")
 	}
 	expiry, err := checkTokenExpired(claims["exp"])
 	if err != nil {
-		return RefreshToken{}, errors.Wrap(err, "checkTokenExpired")
+		return nil, errors.Wrap(err, "checkTokenExpired")
 	}
 	issuer, err := checkTokenIssuer(config.TrustedHost, claims["iss"])
 	if err != nil {
-		return RefreshToken{}, errors.Wrap(err, "checkTokenIssuer")
+		return nil, errors.Wrap(err, "checkTokenIssuer")
 	}
 	ttl, err := getTokenTTL(claims["ttl"])
 	if err != nil {
-		return RefreshToken{}, errors.Wrap(err, "getTokenTTL")
+		return nil, errors.Wrap(err, "getTokenTTL")
 	}
 	scope, err := getTokenScope(claims["scope"])
 	if err != nil {
-		return RefreshToken{}, errors.Wrap(err, "getTokenScope")
+		return nil, errors.Wrap(err, "getTokenScope")
 	}
 	if scope != "refresh" {
-		return RefreshToken{}, errors.New("Token is not an Refresh token")
+		return nil, errors.New("Token is not an Refresh token")
 	}
 	issuedAt, err := getIssuedTime(claims["iat"])
 	if err != nil {
-		return RefreshToken{}, errors.Wrap(err, "getIssuedTime")
+		return nil, errors.Wrap(err, "getIssuedTime")
 	}
 	subject, err := getTokenSubject(claims["sub"])
 	if err != nil {
-		return RefreshToken{}, errors.Wrap(err, "getTokenSubject")
+		return nil, errors.Wrap(err, "getTokenSubject")
 	}
 	jti, err := getTokenJTI(claims["jti"])
 	if err != nil {
-		return RefreshToken{}, errors.Wrap(err, "getTokenJTI")
+		return nil, errors.Wrap(err, "getTokenJTI")
 	}
 
-	token := RefreshToken{
+	token := &RefreshToken{
 		ISS:   issuer,
 		TTL:   ttl,
 		EXP:   expiry,
@@ -134,10 +140,10 @@ func ParseRefreshToken(
 
 	valid, err := CheckTokenNotRevoked(conn, token)
 	if err != nil {
-		return RefreshToken{}, errors.Wrap(err, "CheckTokenNotRevoked")
+		return nil, errors.Wrap(err, "CheckTokenNotRevoked")
 	}
 	if !valid {
-		return RefreshToken{}, errors.New("Token has been revoked")
+		return nil, errors.New("Token has been revoked")
 	}
 	return token, nil
 }

@@ -21,10 +21,10 @@ func addRoutes(
 	// Static files
 	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic()))
 
-	// Index page
+	// Index page and unhandled catchall (404)
 	mux.Handle("GET /", handlers.HandleRoot())
 
-	// Static pages
+	// Static content, unprotected pages
 	mux.Handle("GET /about", handlers.HandlePage(page.About()))
 
 	// Login page and handlers
@@ -35,4 +35,6 @@ func addRoutes(
 		conn,
 		config.SecretKey,
 	))
+
+	// Profile page
 }

@@ -14,7 +14,7 @@ dev:
 	air &\
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch
 
-test:
+tester:
 	go mod tidy && \
 	go run . --port 3232 --test --loglevel trace
 

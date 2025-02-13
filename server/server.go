@@ -33,6 +33,9 @@ func NewServer(
 	handler = middleware.ExcludedFiles(handler)
 	handler = middleware.Favicon(handler)
 
+	// Gzip
+	handler = middleware.Gzip(handler)
+
 	// Start the timer for the request chain so logger can have accurate info
 	handler = middleware.StartTimer(handler)
 	return handler

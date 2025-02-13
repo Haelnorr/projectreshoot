@@ -7,9 +7,10 @@ import (
 	"strings"
 )
 
-func Gzip(next http.Handler) http.Handler {
+func Gzip(next http.Handler, useGzip bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") ||
+			!useGzip {
 			next.ServeHTTP(w, r)
 			return
 		}

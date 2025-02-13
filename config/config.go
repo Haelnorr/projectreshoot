@@ -17,6 +17,7 @@ type Config struct {
 	Port               string        // Port to listen on
 	TrustedHost        string        // Domain/Hostname to accept as trusted
 	SSL                bool          // Flag for SSL Mode
+	GZIP               bool          // Flag for GZIP compression on requests
 	ReadHeaderTimeout  time.Duration // Timeout for reading request headers in seconds
 	WriteTimeout       time.Duration // Timeout for writing requests in seconds
 	IdleTimeout        time.Duration // Timeout for idle connections in seconds
@@ -84,6 +85,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		Port:               port,
 		TrustedHost:        GetEnvDefault("TRUSTED_HOST", "127.0.0.1"),
 		SSL:                GetEnvBool("SSL_MODE", false),
+		GZIP:               GetEnvBool("GZIP", false),
 		ReadHeaderTimeout:  GetEnvDur("READ_HEADER_TIMEOUT", 2),
 		WriteTimeout:       GetEnvDur("WRITE_TIMEOUT", 10),
 		IdleTimeout:        GetEnvDur("IDLE_TIMEOUT", 120),

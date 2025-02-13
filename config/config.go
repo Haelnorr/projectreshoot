@@ -20,8 +20,7 @@ type Config struct {
 	ReadHeaderTimeout  time.Duration // Timeout for reading request headers in seconds
 	WriteTimeout       time.Duration // Timeout for writing requests in seconds
 	IdleTimeout        time.Duration // Timeout for idle connections in seconds
-	TursoDBName        string        // DB Name for Turso DB/Branch
-	TursoToken         string        // Bearer token for Turso DB/Branch
+	DBName             string        // Filename of the db (doesnt include file extension)
 	SecretKey          string        // Secret key for signing tokens
 	AccessTokenExpiry  int64         // Access token expiry in minutes
 	RefreshTokenExpiry int64         // Refresh token expiry in minutes
@@ -35,7 +34,7 @@ type Config struct {
 func GetConfig(args map[string]string) (*Config, error) {
 	err := godotenv.Load(".env")
 	if err != nil {
-		fmt.Println(".env file not found.")
+		fmt.Println(err)
 	}
 	var (
 		host      string
@@ -83,13 +82,12 @@ func GetConfig(args map[string]string) (*Config, error) {
 	config := &Config{
 		Host:               host,
 		Port:               port,
-		TrustedHost:        os.Getenv("TRUSTED_HOST"),
+		TrustedHost:        GetEnvDefault("TRUSTED_HOST", "127.0.0.1"),
 		SSL:                GetEnvBool("SSL_MODE", false),
 		ReadHeaderTimeout:  GetEnvDur("READ_HEADER_TIMEOUT", 2),
 		WriteTimeout:       GetEnvDur("WRITE_TIMEOUT", 10),
 		IdleTimeout:        GetEnvDur("IDLE_TIMEOUT", 120),
-		TursoDBName:        os.Getenv("TURSO_DB_NAME"),
-		TursoToken:         os.Getenv("TURSO_AUTH_TOKEN"),
+		DBName:             GetEnvDefault("DB_NAME", "projectreshoot"),
 		SecretKey:          os.Getenv("SECRET_KEY"),
 		AccessTokenExpiry:  GetEnvInt64("ACCESS_TOKEN_EXPIRY", 5),
 		RefreshTokenExpiry: GetEnvInt64("REFRESH_TOKEN_EXPIRY", 1440), // defaults to 1 day
@@ -99,15 +97,6 @@ func GetConfig(args map[string]string) (*Config, error) {
 		LogDir:             GetEnvDefault("LOG_DIR", ""),
 	}
 
-	if config.TrustedHost == "" {
-		return nil, errors.New("Envar not set: TRUSTED_HOST")
-	}
-	if config.TursoDBName == "" {
-		return nil, errors.New("Envar not set: TURSO_DB_NAME")
-	}
-	if config.TursoToken == "" {
-		return nil, errors.New("Envar not set: TURSO_AUTH_TOKEN")
-	}
 	if config.SecretKey == "" {
 		return nil, errors.New("Envar not set: SECRET_KEY")
 	}

@@ -4,15 +4,15 @@ import (
 	"database/sql"
 	"fmt"
 
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
-	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 // Returns a database connection handle for the Turso DB
-func ConnectToDatabase(primaryUrl *string, authToken *string) (*sql.DB, error) {
-	url := fmt.Sprintf("libsql://%s.turso.io?authToken=%s", *primaryUrl, *authToken)
+func ConnectToDatabase(dbName string) (*sql.DB, error) {
+	file := fmt.Sprintf("file:%s.db", dbName)
+	db, err := sql.Open("sqlite3", file)
 
-	db, err := sql.Open("libsql", url)
 	if err != nil {
 		return nil, errors.Wrap(err, "sql.Open")
 	}

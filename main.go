@@ -56,7 +56,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		return errors.Wrap(err, "logging.GetLogger")
 	}
 
-	conn, err := db.ConnectToDatabase(&config.TursoDBName, &config.TursoToken)
+	conn, err := db.ConnectToDatabase(config.DBName)
 	if err != nil {
 		return errors.Wrap(err, "db.ConnectToDatabase")
 	}

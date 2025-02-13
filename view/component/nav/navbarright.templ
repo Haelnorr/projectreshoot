@@ -1,23 +1,36 @@
 package nav
 
+import "projectreshoot/contexts"
+
 // Returns the right portion of the navbar
 templ navRight() {
+	{{ user := contexts.GetUser(ctx) }}
 	<div class="flex items-center gap-2">
 		<div class="sm:flex sm:gap-2">
-			<a
-				class="hidden rounded-lg px-4 py-2 sm:block 
+			if user != nil {
+				<a
+					class="hidden rounded-lg px-4 py-2 sm:block 
+                bg-sapphire hover:bg-sapphire/75 text-mantle transition"
+					href="#"
+				>
+					{ user.Username }
+				</a>
+			} else {
+				<a
+					class="hidden rounded-lg px-4 py-2 sm:block 
                 bg-green hover:bg-green/75 text-mantle transition"
-				href="/login"
-			>
-				Login
-			</a>
-			<a
-				class="hidden rounded-lg px-4 py-2 sm:block
+					href="/login"
+				>
+					Login
+				</a>
+				<a
+					class="hidden rounded-lg px-4 py-2 sm:block
                 bg-blue text-mantle hover:bg-blue/75 transition"
-				href="/register"
-			>
-				Register
-			</a>
+					href="/register"
+				>
+					Register
+				</a>
+			}
 		</div>
 		<button
 			@click="open = !open"

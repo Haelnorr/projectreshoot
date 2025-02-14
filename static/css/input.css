@@ -1,12 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
 @import "tailwindcss";
 
+[x-cloak] {
+  display: none !important;
+}
 @theme inline {
   --color-rosewater: var(--rosewater);
   --color-flamingo: var(--flamingo);
   --color-pink: var(--pink);
   --color-mauve: var(--mauve);
   --color-red: var(--red);
+  --color-dark-red: var(--dark-red);
   --color-maroon: var(--maroon);
   --color-peach: var(--peach);
   --color-yellow: var(--yellow);
@@ -35,6 +39,7 @@
   --pink: hsl(316, 73%, 69%);
   --mauve: hsl(266, 85%, 58%);
   --red: hsl(347, 87%, 44%);
+  --dark-red: hsl(343, 50%, 82%);
   --maroon: hsl(355, 76%, 59%);
   --peach: hsl(22, 99%, 52%);
   --yellow: hsl(35, 77%, 49%);
@@ -64,6 +69,7 @@
   --pink: hsl(316, 72%, 86%);
   --mauve: hsl(267, 84%, 81%);
   --red: hsl(343, 81%, 75%);
+  --dark-red: hsl(316, 19%, 27%);
   --maroon: hsl(350, 65%, 77%);
   --peach: hsl(23, 92%, 75%);
   --yellow: hsl(41, 86%, 83%);

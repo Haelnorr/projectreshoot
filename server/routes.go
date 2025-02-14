@@ -36,8 +36,9 @@ func addRoutes(
 		config,
 		logger,
 		conn,
-		config.SecretKey,
 	))
 
+	// Logout
+	mux.Handle("POST /logout", handlers.HandleLogout(config, logger, conn))
 	// Profile page
 }

@@ -2,6 +2,7 @@ package layout
 
 import "projectreshoot/view/component/nav"
 import "projectreshoot/view/component/footer"
+import "projectreshoot/view/component"
 
 // Global page layout. Includes HTML document settings, header tags
 // navbar and footer
@@ -37,11 +38,22 @@ templ Global() {
 			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
 			<script src="https://unpkg.com/alpinejs" defer></script>
+			<script>
+                // uncomment this line to enable logging of htmx events
+                //htmx.logAll();
+            </script>
 		</head>
 		<body
-			class="bg-base text-text ubuntu-mono-regular"
+			class="bg-base text-text ubuntu-mono-regular overflow-x-hidden"
+			x-data="{ showError: false }"
+			x-on:htmx:error="if ($event.detail.errorInfo.error.includes('Code 500'))
+            showError = true; setTimeout(() => showError = false, 6000)"
 		>
-			<div id="main-content" class="flex flex-col h-screen justify-between">
+			@component.ErrorPopup()
+			<div
+				id="main-content"
+				class="flex flex-col h-screen justify-between"
+			>
 				@nav.Navbar()
 				<div id="page-content" class="mb-auto">
 					{ children... }

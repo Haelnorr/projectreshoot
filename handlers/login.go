@@ -48,7 +48,6 @@ func HandleLoginRequest(
 	config *config.Config,
 	logger *zerolog.Logger,
 	conn *sql.DB,
-	secretKey string,
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {

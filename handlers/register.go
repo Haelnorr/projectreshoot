@@ -28,6 +28,9 @@ func validateRegistration(conn *sql.DB, r *http.Request) (*db.User, error) {
 	if formPassword != formConfirmPassword {
 		return nil, errors.New("Passwords do not match")
 	}
+	if len(formPassword) > 72 {
+		return nil, errors.New("Password exceeds maximum length of 72 bytes")
+	}
 	user, err := db.CreateNewUser(conn, formUsername, formPassword)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.CreateNewUser")
@@ -47,7 +50,8 @@ func HandleRegisterRequest(
 			user, err := validateRegistration(conn, r)
 			if err != nil {
 				if err.Error() != "Username is taken" &&
-					err.Error() != "Passwords do not match" {
+					err.Error() != "Passwords do not match" &&
+					err.Error() != "Password exceeds maximum length of 72 bytes" {
 					logger.Warn().Caller().Err(err).Msg("Registration request failed")
 					w.WriteHeader(http.StatusInternalServerError)
 				} else {

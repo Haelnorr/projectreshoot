@@ -18,5 +18,10 @@ tester:
 	go mod tidy && \
 	go run . --port 3232 --test --loglevel trace
 
+test:
+	go mod tidy && \
+	go test . -v
+	go test ./middleware -v
+
 clean:
 	go clean

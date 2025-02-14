@@ -6,6 +6,7 @@ import (
 
 	"projectreshoot/config"
 	"projectreshoot/handlers"
+	"projectreshoot/middleware"
 	"projectreshoot/view/page"
 
 	"github.com/rs/zerolog"
@@ -31,23 +32,37 @@ func addRoutes(
 	mux.Handle("GET /about", handlers.HandlePage(page.About()))
 
 	// Login page and handlers
-	mux.Handle("GET /login", handlers.HandleLoginPage(config.TrustedHost))
-	mux.Handle("POST /login", handlers.HandleLoginRequest(
-		config,
-		logger,
-		conn,
-	))
+	mux.Handle("GET /login",
+		middleware.RequiresLogout(
+			handlers.HandleLoginPage(config.TrustedHost),
+		))
+	mux.Handle("POST /login",
+		middleware.RequiresLogout(
+			handlers.HandleLoginRequest(
+				config,
+				logger,
+				conn,
+			)))
 
 	// Register page and handlers
-	mux.Handle("GET /register", handlers.HandleRegisterPage(config.TrustedHost))
-	mux.Handle("POST /register", handlers.HandleRegisterRequest(
-		config,
-		logger,
-		conn,
-	))
+	mux.Handle("GET /register",
+		middleware.RequiresLogout(
+			handlers.HandleRegisterPage(config.TrustedHost),
+		))
+	mux.Handle("POST /register",
+		middleware.RequiresLogout(
+			handlers.HandleRegisterRequest(
+				config,
+				logger,
+				conn,
+			)))
 
 	// Logout
 	mux.Handle("POST /logout", handlers.HandleLogout(config, logger, conn))
 
 	// Profile page
+	mux.Handle("GET /profile",
+		middleware.RequiresLogin(
+			handlers.HandleProfile(),
+		))
 }

@@ -10,7 +10,8 @@ templ RegisterForm(registerError string) {
 	errPasswords := "false"
 	if registerError == "Username is taken" {
 		errUsername = "true"
-	} else if registerError == "Passwords do not match" {
+	} else if registerError == "Passwords do not match" ||
+		registerError == "Password exceeds maximum length of 72 bytes" {
 		errPasswords = "true"
 	}
 	xdata := fmt.Sprintf(

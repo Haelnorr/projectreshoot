@@ -1,7 +1,10 @@
 package nav
 
+import "projectreshoot/contexts"
+
 // Returns the mobile version of the navbar thats only visible when activated
 templ sideNav(navItems []NavItem) {
+	{{ user := contexts.GetUser(ctx) }}
 	<div
 		x-show="open"
 		x-transition
@@ -22,27 +25,29 @@ templ sideNav(navItems []NavItem) {
 				}
 			</ul>
 		</div>
-		<div class="px-4 pb-6">
-			<ul class="space-y-1">
-				<li class="flex justify-center items-center gap-2">
-					<a
-						class="w-26 px-4 py-2 rounded-lg
+		if user == nil {
+			<div class="px-4 pb-6">
+				<ul class="space-y-1">
+					<li class="flex justify-center items-center gap-2">
+						<a
+							class="w-26 px-4 py-2 rounded-lg
                         bg-green text-mantle  transition hover:bg-green/75
                         text-center"
-						href="/login"
-					>
-						Login
-					</a>
-					<a
-						class="w-26 px-4 py-2 rounded-lg
+							href="/login"
+						>
+							Login
+						</a>
+						<a
+							class="w-26 px-4 py-2 rounded-lg
                         bg-blue text-mantle  transition hover:bg-blue/75
                         text-center"
-						href="/register"
-					>
-						Register
-					</a>
-				</li>
-			</ul>
-		</div>
+							href="/register"
+						>
+							Register
+						</a>
+					</li>
+				</ul>
+			</div>
+		}
 	</div>
 }

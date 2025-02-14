@@ -45,38 +45,32 @@ func (user *User) CheckPassword(password string) error {
 	return nil
 }
 
-// Queries the database for a user matching the given username.
-// Query is case insensitive
-func GetUserFromUsername(conn *sql.DB, username string) (User, error) {
-	query := `SELECT id, username, password_hash, created_at FROM users 
-	          WHERE username = ? COLLATE NOCASE`
-	rows, err := conn.Query(query, username)
+// Creates a new user in the database and returns a pointer
+func CreateNewUser(conn *sql.DB, username string, password string) (*User, error) {
+	query := `INSERT INTO users (username) VALUES (?)`
+	_, err := conn.Exec(query, username)
 	if err != nil {
-		return User{}, errors.Wrap(err, "conn.Query")
+		return nil, errors.Wrap(err, "conn.Exec")
 	}
-	defer rows.Close()
-	var user User
-	for rows.Next() {
-		err := rows.Scan(
-			&user.ID,
-			&user.Username,
-			&user.Password_hash,
-			&user.Created_at,
-		)
-		if err != nil {
-			return User{}, errors.Wrap(err, "rows.Scan")
-		}
+	user, err := GetUserFromUsername(conn, username)
+	if err != nil {
+		return nil, errors.Wrap(err, "GetUserFromUsername")
+	}
+	err = user.SetPassword(conn, password)
+	if err != nil {
+		return nil, errors.Wrap(err, "user.SetPassword")
 	}
 	return user, nil
 }
 
-// Queries the database for a user matching the given ID.
-func GetUserFromID(conn *sql.DB, id int) (User, error) {
+// Queries the database for a user matching the given username.
+// Query is case insensitive
+func GetUserFromUsername(conn *sql.DB, username string) (*User, error) {
 	query := `SELECT id, username, password_hash, created_at FROM users 
-	          WHERE id = ?`
-	rows, err := conn.Query(query, id)
+	          WHERE username = ? COLLATE NOCASE`
+	rows, err := conn.Query(query, username)
 	if err != nil {
-		return User{}, errors.Wrap(err, "conn.Query")
+		return nil, errors.Wrap(err, "conn.Query")
 	}
 	defer rows.Close()
 	var user User
@@ -88,8 +82,44 @@ func GetUserFromID(conn *sql.DB, id int) (User, error) {
 			&user.Created_at,
 		)
 		if err != nil {
-			return User{}, errors.Wrap(err, "rows.Scan")
+			return nil, errors.Wrap(err, "rows.Scan")
 		}
 	}
-	return user, nil
+	return &user, nil
+}
+
+// Queries the database for a user matching the given ID.
+func GetUserFromID(conn *sql.DB, id int) (*User, error) {
+	query := `SELECT id, username, password_hash, created_at FROM users 
+	          WHERE id = ?`
+	rows, err := conn.Query(query, id)
+	if err != nil {
+		return nil, errors.Wrap(err, "conn.Query")
+	}
+	defer rows.Close()
+	var user User
+	for rows.Next() {
+		err := rows.Scan(
+			&user.ID,
+			&user.Username,
+			&user.Password_hash,
+			&user.Created_at,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "rows.Scan")
+		}
+	}
+	return &user, nil
+}
+
+// Checks if the given username is unique. Returns true if not taken
+func CheckUsernameUnique(conn *sql.DB, username string) (bool, error) {
+	query := `SELECT 1 FROM users WHERE username = ? COLLATE NOCASE LIMIT 1`
+	rows, err := conn.Query(query, username)
+	if err != nil {
+		return false, errors.Wrap(err, "conn.Query")
+	}
+	defer rows.Close()
+	taken := rows.Next()
+	return !taken, nil
 }

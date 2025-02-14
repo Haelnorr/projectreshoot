@@ -24,12 +24,11 @@ func SetPageFrom(w http.ResponseWriter, r *http.Request, trustedHost string) {
 	if err != nil {
 		return
 	}
-	// NOTE: its possible this could cause an infinite redirect
-	// if that happens, will need to add a way to 'blacklist' certain paths
-	// from being set here
 	var pageFrom string
 	if parsedURL.Path == "" || parsedURL.Host != trustedHost {
 		pageFrom = "/"
+	} else if parsedURL.Path == "/login" || parsedURL.Path == "/register" {
+		return
 	} else {
 		pageFrom = parsedURL.Path
 	}

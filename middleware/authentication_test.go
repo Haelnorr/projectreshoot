@@ -50,13 +50,13 @@ func TestAuthenticationMiddleware(t *testing.T) {
 	require.NoError(t, err)
 
 	// Good tokens
-	atStr, _, err := jwt.GenerateAccessToken(cfg, &user, false, false)
+	atStr, _, err := jwt.GenerateAccessToken(cfg, user, false, false)
 	require.NoError(t, err)
-	rtStr, _, err := jwt.GenerateRefreshToken(cfg, &user, false)
+	rtStr, _, err := jwt.GenerateRefreshToken(cfg, user, false)
 	require.NoError(t, err)
 
 	// Create a token and revoke it for testing
-	expStr, _, err := jwt.GenerateAccessToken(cfg, &user, false, false)
+	expStr, _, err := jwt.GenerateAccessToken(cfg, user, false, false)
 	require.NoError(t, err)
 	expT, err := jwt.ParseAccessToken(cfg, conn, expStr)
 	require.NoError(t, err)

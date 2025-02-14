@@ -14,37 +14,29 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Validates the username matches a user in the database and the password
-// is correct. Returns the corresponding user
-func validateLogin(conn *sql.DB, r *http.Request) (*db.User, error) {
+func validateRegistration(conn *sql.DB, r *http.Request) (*db.User, error) {
 	formUsername := r.FormValue("username")
 	formPassword := r.FormValue("password")
-	user, err := db.GetUserFromUsername(conn, formUsername)
+	formConfirmPassword := r.FormValue("confirm-password")
+	unique, err := db.CheckUsernameUnique(conn, formUsername)
 	if err != nil {
-		return nil, errors.Wrap(err, "db.GetUserFromUsername")
+		return nil, errors.Wrap(err, "db.CheckUsernameUnique")
+	}
+	if !unique {
+		return nil, errors.New("Username is taken")
+	}
+	if formPassword != formConfirmPassword {
+		return nil, errors.New("Passwords do not match")
+	}
+	user, err := db.CreateNewUser(conn, formUsername, formPassword)
+	if err != nil {
+		return nil, errors.Wrap(err, "db.CreateNewUser")
 	}
 
-	err = user.CheckPassword(formPassword)
-	if err != nil {
-		return nil, errors.New("Username or password incorrect")
-	}
 	return user, nil
 }
 
-// Returns result of the "Remember me?" checkbox as a boolean
-func checkRememberMe(r *http.Request) bool {
-	rememberMe := r.FormValue("remember-me")
-	if rememberMe == "on" {
-		return true
-	} else {
-		return false
-	}
-}
-
-// Handles an attempted login request. On success will return a HTMX redirect
-// and on fail will return the login form again, passing the error to the
-// template for user feedback
-func HandleLoginRequest(
+func HandleRegisterRequest(
 	config *config.Config,
 	logger *zerolog.Logger,
 	conn *sql.DB,
@@ -52,13 +44,14 @@ func HandleLoginRequest(
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
-			user, err := validateLogin(conn, r)
+			user, err := validateRegistration(conn, r)
 			if err != nil {
-				if err.Error() != "Username or password incorrect" {
-					logger.Warn().Caller().Err(err).Msg("Login request failed")
+				if err.Error() != "Username is taken" &&
+					err.Error() != "Passwords do not match" {
+					logger.Warn().Caller().Err(err).Msg("Registration request failed")
 					w.WriteHeader(http.StatusInternalServerError)
 				} else {
-					form.LoginForm(err.Error()).Render(r.Context(), w)
+					form.RegisterForm(err.Error()).Render(r.Context(), w)
 				}
 				return
 			}
@@ -78,11 +71,11 @@ func HandleLoginRequest(
 
 // Handles a request to view the login page. Will attempt to set "pagefrom"
 // cookie so a successful login can redirect the user to the page they came
-func HandleLoginPage(trustedHost string) http.Handler {
+func HandleRegisterPage(trustedHost string) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			cookies.SetPageFrom(w, r, trustedHost)
-			page.Login().Render(r.Context(), w)
+			page.Register().Render(r.Context(), w)
 		},
 	)
 }

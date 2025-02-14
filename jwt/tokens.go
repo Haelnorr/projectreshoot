@@ -43,14 +43,14 @@ func (a AccessToken) GetUser(conn *sql.DB) (*db.User, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "db.GetUserFromID")
 	}
-	return &user, nil
+	return user, nil
 }
 func (r RefreshToken) GetUser(conn *sql.DB) (*db.User, error) {
 	user, err := db.GetUserFromID(conn, r.SUB)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.GetUserFromID")
 	}
-	return &user, nil
+	return user, nil
 }
 
 func (a AccessToken) GetJTI() uuid.UUID {

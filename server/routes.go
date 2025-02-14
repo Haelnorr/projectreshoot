@@ -38,7 +38,16 @@ func addRoutes(
 		conn,
 	))
 
+	// Register page and handlers
+	mux.Handle("GET /register", handlers.HandleRegisterPage(config.TrustedHost))
+	mux.Handle("POST /register", handlers.HandleRegisterRequest(
+		config,
+		logger,
+		conn,
+	))
+
 	// Logout
 	mux.Handle("POST /logout", handlers.HandleLogout(config, logger, conn))
+
 	// Profile page
 }

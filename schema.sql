@@ -7,7 +7,7 @@ exp INTEGER NOT NULL
 CREATE TABLE IF NOT EXISTS "users" (
     id INTEGER PRIMARY KEY AUTOINCREMENT, 
     username TEXT NOT NULL UNIQUE, 
-    password_hash TEXT, 
+    password_hash TEXT DEFAULT "", 
     created_at INTEGER DEFAULT (unixepoch())
 ) STRICT;
 CREATE TRIGGER cleanup_expired_tokens

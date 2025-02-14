@@ -1,0 +1,55 @@
+package account
+
+import "fmt"
+
+type MenuItem struct {
+	name string
+	href string
+}
+
+func getMenuItems() []MenuItem {
+	return []MenuItem{
+		{
+			name: "General",
+			href: "general",
+		},
+		{
+			name: "Security",
+			href: "security",
+		},
+		{
+			name: "Preferences",
+			href: "preferences",
+		},
+	}
+}
+
+templ SelectMenu(activePage string) {
+	{{
+	menuItems := getMenuItems()
+	page := fmt.Sprintf("{page:'%s'}", activePage)
+	}}
+	<div class="flex w-fit flex-col border-e bg-surface0 rounded-l-xl">
+		<div class="px-4 py-6">
+			<ul class="mt-6 space-y-1" x-data={ page }>
+				for _, item := range menuItems {
+					{{
+	activebind := fmt.Sprintf("page === '%s' && 'bg-mantle'", item.name)
+					}}
+					<li>
+						<button
+							type="submit"
+							name="subpage"
+							value={ item.name }
+							class="block rounded-lg px-4 py-2 text-md
+                            hover:bg-mantle hover:cursor-pointer"
+							:class={ activebind }
+						>
+							{ item.name }
+						</button>
+					</li>
+				}
+			</ul>
+		</div>
+	</div>
+}

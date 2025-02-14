@@ -1,0 +1,15 @@
+package account
+
+templ AccountContent(subpage string) {
+	<form hx-post="/account-select-page">
+		<div class="flex max-w-200 min-h-100 mx-auto bg-mantle mt-10 rounded-xl">
+			@SelectMenu(subpage)
+			<div class="mt-5">
+				<div class="pl-10 text-2xl text-subtext1 underline">
+					{ subpage }
+				</div>
+				// page content
+			</div>
+		</div>
+	</form>
+}

@@ -63,6 +63,16 @@ func addRoutes(
 	// Profile page
 	mux.Handle("GET /profile",
 		middleware.RequiresLogin(
-			handlers.HandleProfile(),
+			handlers.HandleProfilePage(),
+		))
+
+	// Account page
+	mux.Handle("GET /account",
+		middleware.RequiresLogin(
+			handlers.HandleAccountPage(),
+		))
+	mux.Handle("POST /account-select-page",
+		middleware.RequiresLogin(
+			handlers.HandleAccountSubpage(),
 		))
 }

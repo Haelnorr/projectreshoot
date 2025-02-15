@@ -3,6 +3,7 @@ package middleware
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	"projectreshoot/config"
 	"projectreshoot/contexts"
@@ -52,7 +53,7 @@ func getAuthenticatedUser(
 	conn *sql.DB,
 	w http.ResponseWriter,
 	r *http.Request,
-) (*db.User, error) {
+) (*contexts.AuthenticatedUser, error) {
 	// Get token strings from cookies
 	atStr, rtStr := cookies.GetTokenStrings(r)
 	// Attempt to parse the access token
@@ -69,14 +70,22 @@ func getAuthenticatedUser(
 			return nil, errors.Wrap(err, "refreshAuthTokens")
 		}
 		// New token pair sent, return the authorized user
-		return user, nil
+		authUser := contexts.AuthenticatedUser{
+			User:  user,
+			Fresh: time.Now().Unix(),
+		}
+		return &authUser, nil
 	}
 	// Access token valid
 	user, err := aT.GetUser(conn)
 	if err != nil {
 		return nil, errors.Wrap(err, "rT.GetUser")
 	}
-	return user, nil
+	authUser := contexts.AuthenticatedUser{
+		User:  user,
+		Fresh: aT.Fresh,
+	}
+	return &authUser, nil
 }
 
 // Attempt to authenticate the user and add their account details

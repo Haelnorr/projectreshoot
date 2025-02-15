@@ -77,6 +77,12 @@ func addRoutes(
 		))
 	mux.Handle("POST /change-username",
 		middleware.RequiresLogin(
-			handlers.HandleChangeUsername(logger, conn),
+			middleware.RequiresFresh(
+				handlers.HandleChangeUsername(logger, conn),
+			),
+		))
+	mux.Handle("POST /reauthenticate",
+		middleware.RequiresLogin(
+			handlers.HandleReauthenticate(logger, config, conn),
 		))
 }

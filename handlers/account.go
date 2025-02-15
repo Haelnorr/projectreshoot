@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// Renders the account page on the 'General' subpage
 func HandleAccountPage() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -20,6 +21,7 @@ func HandleAccountPage() http.Handler {
 	)
 }
 
+// Handles a request to change the subpage for the Account page
 func HandleAccountSubpage() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -30,6 +32,7 @@ func HandleAccountSubpage() http.Handler {
 	)
 }
 
+// Handles a request to change the users username
 func HandleChangeUsername(
 	logger *zerolog.Logger,
 	conn *sql.DB,

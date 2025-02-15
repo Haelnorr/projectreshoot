@@ -48,3 +48,13 @@ func (user *User) ChangeUsername(conn *sql.DB, newUsername string) error {
 	}
 	return nil
 }
+
+// Change the user's bio
+func (user *User) ChangeBio(conn *sql.DB, newBio string) error {
+	query := `UPDATE users SET bio = ? WHERE id = ?`
+	_, err := conn.Exec(query, newBio, user.ID)
+	if err != nil {
+		return errors.Wrap(err, "conn.Exec")
+	}
+	return nil
+}

@@ -60,6 +60,12 @@ func addRoutes(
 	// Logout
 	mux.Handle("POST /logout", handlers.HandleLogout(config, logger, conn))
 
+	// Reauthentication request
+	mux.Handle("POST /reauthenticate",
+		middleware.RequiresLogin(
+			handlers.HandleReauthenticate(logger, config, conn),
+		))
+
 	// Profile page
 	mux.Handle("GET /profile",
 		middleware.RequiresLogin(
@@ -81,8 +87,8 @@ func addRoutes(
 				handlers.HandleChangeUsername(logger, conn),
 			),
 		))
-	mux.Handle("POST /reauthenticate",
+	mux.Handle("POST /change-bio",
 		middleware.RequiresLogin(
-			handlers.HandleReauthenticate(logger, config, conn),
+			handlers.HandleChangeBio(logger, conn),
 		))
 }

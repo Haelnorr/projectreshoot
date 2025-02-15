@@ -24,7 +24,7 @@ templ ChangeUsername(err string, username string) {
 			>
 				<label
 					for="username"
-					class="text-lg"
+					class="text-lg w-20"
 				>Username</label>
 				<input
 					type="text"
@@ -38,8 +38,8 @@ templ ChangeUsername(err string, username string) {
 					x-model="username"
 				/>
 				<div
-					class="absolute inset-y-0 sm:start-66 start-43 pt-9
-                        pointer-events-none sm:pe-3 sm:pt-2"
+					class="absolute inset-y-0 sm:start-68 start-43 pt-9
+                        pointer-events-none sm:pt-2"
 					x-show="err"
 					x-cloak
 				>
@@ -85,7 +85,7 @@ templ ChangeUsername(err string, username string) {
 			</div>
 		</div>
 		<p
-			class="block text-red sm:ml-24 mt-1 transition"
+			class="block text-red sm:ml-26 mt-1 transition"
 			x-cloak
 			x-show="err"
 			x-text="err"

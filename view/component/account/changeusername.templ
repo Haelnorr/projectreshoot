@@ -16,11 +16,11 @@ templ ChangeUsername(err string, username string) {
 		x-data={ "{ err: '" + err + "'}" }
 	>
 		<div
-			class="flex"
+			class="flex flex-col sm:flex-row"
 			x-data={ "{username: '" + username + "'}" }
 		>
 			<div
-				class="flex items-center relative"
+				class="flex flex-col sm:flex-row sm:items-center relative"
 			>
 				<label
 					for="username"
@@ -31,15 +31,15 @@ templ ChangeUsername(err string, username string) {
 					id="username"
 					name="username"
 					class="py-1 px-4 rounded-lg text-md
-                bg-surface0 border border-surface2
-                disabled:opacity-50 ml-5 disabled:pointer-events-none"
+                    bg-surface0 border border-surface2 w-50 sm:ml-5
+                    disabled:opacity-50 ml-0 disabled:pointer-events-none"
 					required
 					aria-describedby="username-error"
 					x-model="username"
 				/>
 				<div
-					class="absolute inset-y-0 end-0 
-                        pointer-events-none pe-3 pt-2"
+					class="absolute inset-y-0 sm:start-66 start-43 pt-9
+                        pointer-events-none sm:pe-3 sm:pt-2"
 					x-show="err"
 					x-cloak
 				>
@@ -60,9 +60,9 @@ templ ChangeUsername(err string, username string) {
 					</svg>
 				</div>
 			</div>
-			<div>
+			<div class="mt-2 sm:mt-0">
 				<button
-					class="rounded-lg bg-blue py-1 px-2 text-mantle ml-2
+					class="rounded-lg bg-blue py-1 px-2 text-mantle sm:ml-2
                 hover:cursor-pointer hover:bg-blue/75 transition"
 					x-cloak
 					x-show={ "username !=='" + user.Username + "'" }
@@ -85,7 +85,7 @@ templ ChangeUsername(err string, username string) {
 			</div>
 		</div>
 		<p
-			class="block text-red ml-24 mt-1 transition"
+			class="block text-red sm:ml-24 mt-1 transition"
 			x-cloak
 			x-show="err"
 			x-text="err"

@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS "users" (
     id INTEGER PRIMARY KEY AUTOINCREMENT, 
     username TEXT NOT NULL UNIQUE, 
     password_hash TEXT DEFAULT "", 
-    created_at INTEGER DEFAULT (unixepoch())
+    created_at INTEGER DEFAULT (unixepoch()),
+    bio TEXT DEFAULT ""
 ) STRICT;
 CREATE TRIGGER cleanup_expired_tokens
 AFTER INSERT ON jwtblacklist

@@ -75,4 +75,8 @@ func addRoutes(
 		middleware.RequiresLogin(
 			handlers.HandleAccountSubpage(),
 		))
+	mux.Handle("POST /change-username",
+		middleware.RequiresLogin(
+			handlers.HandleChangeUsername(logger, conn),
+		))
 }

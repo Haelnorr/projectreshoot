@@ -1,0 +1,24 @@
+package account
+
+templ AccountContainer(subpage string) {
+	<div
+		id="account-container"
+		class="flex max-w-200 min-h-100 mx-auto bg-mantle mt-10 rounded-xl"
+	>
+		@SelectMenu(subpage)
+		<div class="mt-5 w-full">
+			<div
+				class="pl-5 text-2xl text-subtext1 border-b 
+                    border-overlay0 w-[90%] mx-auto"
+			>
+				{ subpage }
+			</div>
+			switch subpage {
+				case "General":
+					@AccountGeneral()
+				case "Security":
+					@AccountGeneral()
+			}
+		</div>
+	</div>
+}

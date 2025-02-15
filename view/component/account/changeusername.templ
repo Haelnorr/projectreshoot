@@ -1,0 +1,94 @@
+package account
+
+import "projectreshoot/contexts"
+
+templ ChangeUsername(err string, username string) {
+	{{
+	user := contexts.GetUser(ctx)
+	if username == "" {
+		username = user.Username
+	}
+	}}
+	<form
+		hx-post="/change-username"
+		hx-swap="outerHTML"
+		class="w-[90%] mx-auto mt-5"
+		x-data={ "{ err: '" + err + "'}" }
+	>
+		<div
+			class="flex"
+			x-data={ "{username: '" + username + "'}" }
+		>
+			<div
+				class="flex items-center relative"
+			>
+				<label
+					for="username"
+					class="text-lg"
+				>Username</label>
+				<input
+					type="text"
+					id="username"
+					name="username"
+					class="py-1 px-4 rounded-lg text-md
+                bg-surface0 border border-surface2
+                disabled:opacity-50 ml-5 disabled:pointer-events-none"
+					required
+					aria-describedby="username-error"
+					x-model="username"
+				/>
+				<div
+					class="absolute inset-y-0 end-0 
+                        pointer-events-none pe-3 pt-2"
+					x-show="err"
+					x-cloak
+				>
+					<svg
+						class="size-5 text-red"
+						width="16"
+						height="16"
+						fill="currentColor"
+						viewBox="0 0 16 16"
+						aria-hidden="true"
+					>
+						<path
+							d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 
+                                4a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 
+                                0 1.1 0l.35-3.507A.905.905 0 0 0 8 4zm.002 6a1 
+                                1 0 1 0 0 2 1 1 0 0 0 0-2z"
+						></path>
+					</svg>
+				</div>
+			</div>
+			<div>
+				<button
+					class="rounded-lg bg-blue py-1 px-2 text-mantle ml-2
+                hover:cursor-pointer hover:bg-blue/75 transition"
+					x-cloak
+					x-show={ "username !=='" + user.Username + "'" }
+					x-transition.opacity.duration.500ms
+				>
+					Update
+				</button>
+				<button
+					class="rounded-lg bg-overlay0 py-1 px-2 text-mantle
+                hover:cursor-pointer hover:bg-surface2 transition"
+					type="button"
+					href="#"
+					x-cloak
+					x-show={ "username !=='" + user.Username + "'" }
+					x-transition.opacity.duration.500ms
+					@click={ "username='" + user.Username + "';err=''" }
+				>
+					Cancel
+				</button>
+			</div>
+		</div>
+		<p
+			class="block text-red ml-24 mt-1 transition"
+			x-cloak
+			x-show="err"
+			x-text="err"
+		></p>
+	</form>
+}

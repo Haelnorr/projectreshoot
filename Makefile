@@ -21,8 +21,8 @@ tester:
 test:
 	rm -f **/.projectreshoot-test-database.db
 	go mod tidy && \
-	go test . -v
-	go test ./middleware -v
+	go test .
+	go test ./middleware
 
 clean:
 	go clean

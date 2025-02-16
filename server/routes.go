@@ -18,12 +18,13 @@ func addRoutes(
 	logger *zerolog.Logger,
 	config *config.Config,
 	conn *sql.DB,
+	staticFS *http.FileSystem,
 ) {
 	// Health check
 	mux.HandleFunc("GET /healthz", func(http.ResponseWriter, *http.Request) {})
 
 	// Static files
-	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic()))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic(staticFS)))
 
 	// Index page and unhandled catchall (404)
 	mux.Handle("GET /", handlers.HandleRoot())

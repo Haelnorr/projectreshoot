@@ -18,12 +18,13 @@ func addRoutes(
 	logger *zerolog.Logger,
 	config *config.Config,
 	conn *sql.DB,
+	staticFS *http.FileSystem,
 ) {
 	// Health check
 	mux.HandleFunc("GET /healthz", func(http.ResponseWriter, *http.Request) {})
 
 	// Static files
-	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic()))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic(staticFS)))
 
 	// Index page and unhandled catchall (404)
 	mux.Handle("GET /", handlers.HandleRoot())
@@ -60,9 +61,41 @@ func addRoutes(
 	// Logout
 	mux.Handle("POST /logout", handlers.HandleLogout(config, logger, conn))
 
+	// Reauthentication request
+	mux.Handle("POST /reauthenticate",
+		middleware.RequiresLogin(
+			handlers.HandleReauthenticate(logger, config, conn),
+		))
+
 	// Profile page
 	mux.Handle("GET /profile",
 		middleware.RequiresLogin(
-			handlers.HandleProfile(),
+			handlers.HandleProfilePage(),
+		))
+
+	// Account page
+	mux.Handle("GET /account",
+		middleware.RequiresLogin(
+			handlers.HandleAccountPage(),
+		))
+	mux.Handle("POST /account-select-page",
+		middleware.RequiresLogin(
+			handlers.HandleAccountSubpage(),
+		))
+	mux.Handle("POST /change-username",
+		middleware.RequiresLogin(
+			middleware.RequiresFresh(
+				handlers.HandleChangeUsername(logger, conn),
+			),
+		))
+	mux.Handle("POST /change-bio",
+		middleware.RequiresLogin(
+			handlers.HandleChangeBio(logger, conn),
+		))
+	mux.Handle("POST /change-password",
+		middleware.RequiresLogin(
+			middleware.RequiresFresh(
+				handlers.HandleChangePassword(logger, conn),
+			),
 		))
 }

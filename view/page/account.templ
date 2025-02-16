@@ -1,0 +1,10 @@
+package page
+
+import "projectreshoot/view/layout"
+import "projectreshoot/view/component/account"
+
+templ Account(subpage string) {
+	@layout.Global() {
+		@account.AccountContainer(subpage)
+	}
+}

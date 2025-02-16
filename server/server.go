@@ -15,6 +15,7 @@ func NewServer(
 	config *config.Config,
 	logger *zerolog.Logger,
 	conn *sql.DB,
+	staticFS *http.FileSystem,
 ) http.Handler {
 	mux := http.NewServeMux()
 	addRoutes(
@@ -22,16 +23,13 @@ func NewServer(
 		logger,
 		config,
 		conn,
+		staticFS,
 	)
 	var handler http.Handler = mux
 	// Add middleware here, must be added in reverse order of execution
 	// i.e. First in list will get executed last during the request handling
 	handler = middleware.Logging(logger, handler)
 	handler = middleware.Authentication(logger, config, conn, handler)
-
-	// Serve the favicon and exluded files before any middleware is added
-	handler = middleware.ExcludedFiles(handler)
-	handler = middleware.Favicon(handler)
 
 	// Gzip
 	handler = middleware.Gzip(handler, config.GZIP)

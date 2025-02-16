@@ -1,36 +1,41 @@
 package form
 
-import "fmt"
-
 // Login Form. If loginError is not an empty string, it will display the
 // contents of loginError to the user.
 templ RegisterForm(registerError string) {
 	{{
-	errUsername := "false"
-	errPasswords := "false"
-	if registerError == "Username is taken" {
-		errUsername = "true"
-	} else if registerError == "Passwords do not match" ||
-		registerError == "Password exceeds maximum length of 72 bytes" {
-		errPasswords = "true"
+	usernameErr := "Username is taken"
+	passErrs := []string{
+		"Password exceeds maximum length of 72 bytes",
+		"Passwords do not match",
 	}
-	xdata := fmt.Sprintf(
-		"{errUsername: %s, errPasswords: %s, errorMessage: '%s'}",
-		errUsername,
-		errPasswords,
-		registerError,
-	)
 	}}
 	<form
 		hx-post="/register"
-		x-data="{ submitted: false, buttontext: 'Login' }"
+		x-data={ templ.JSFuncCall(
+                "registerFormData", registerError, usernameErr, passErrs,
+                ).CallInline }
 		x-on:htmx:xhr:loadstart="submitted=true;buttontext='Loading...'"
 	>
+		<script>
+            function registerFormData(err, usernameErr, passErrs) {
+                return {
+                    submitted: false,
+                    buttontext: 'Register',
+                    errorMessage: err, 
+                    errUsername: err === usernameErr ? true : false, 
+                    errPasswords: passErrs.includes(err) ? true : false,
+                    resetErr() {
+                        this.errorMessage = "";
+                        this.errUsername = false;
+                        this.errPasswords = false;
+                    },
+                };
+            }
+        </script>
 		<div
 			class="grid gap-y-4"
-			x-data={ xdata }
 		>
-			<!-- Form Group -->
 			<div>
 				<label
 					for="email"
@@ -47,6 +52,7 @@ templ RegisterForm(registerError string) {
                         disabled:pointer-events-none"
 						required
 						aria-describedby="username-error"
+						@input="resetErr()"
 					/>
 					<div
 						class="absolute inset-y-0 end-0 
@@ -96,6 +102,7 @@ templ RegisterForm(registerError string) {
                         disabled:opacity-50 disabled:pointer-events-none"
 						required
 						aria-describedby="password-error"
+						@input="resetErr()"
 					/>
 					<div
 						class="absolute inset-y-0 end-0 
@@ -138,6 +145,7 @@ templ RegisterForm(registerError string) {
                             disabled:opacity-50 disabled:pointer-events-none"
 						required
 						aria-describedby="confirm-password-error"
+						@input="resetErr()"
 					/>
 					<div
 						class="absolute inset-y-0 end-0 

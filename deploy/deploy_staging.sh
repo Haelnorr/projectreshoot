@@ -13,7 +13,7 @@ COMMIT_HASH=$1
 RELEASES_DIR="/home/deploy/releases/staging"
 DEPLOY_BIN="/home/deploy/staging/projectreshoot"
 SERVICE_NAME="staging.projectreshoot"
-BINARY_NAME="projectreshoot-${COMMIT_HASH}"
+BINARY_NAME="projectreshoot-staging-${COMMIT_HASH}"
 declare -a PORTS=("3005" "3006" "3007")
 
 # Check if the binary exists

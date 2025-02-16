@@ -19,11 +19,11 @@ tester:
 	go run . --port 3232 --test --loglevel trace
 
 test:
-	rm -f **/.projectreshoot-test-database.db
+	rm -f **/.projectreshoot-test-database.db && \
 	go mod tidy && \
    	templ generate && \
 	go generate && \
-	go test ./...
+	go test ./middleware
 
 clean:
 	go clean

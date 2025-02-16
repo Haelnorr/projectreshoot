@@ -4,6 +4,7 @@
 BINARY_NAME=projectreshoot
 
 build:
+	tailwindcss -i ./static/css/input.css -o ./static/css/output.css && \
 	go mod tidy && \
    	templ generate && \
 	go generate && \

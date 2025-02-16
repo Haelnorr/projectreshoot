@@ -1,0 +1,55 @@
+name: Deploy Staging to Server
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+
+      - name: Install Templ
+        run: go install github.com/a-h/templ/cmd/templ@latest
+
+      - name: Install tailwindcsscli
+        run: |
+          curl -fsSL -o tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64
+          chmod +x tailwindcss
+          sudo mv tailwindcss /usr/local/bin/
+
+      - name: Run tests
+        run: make test
+
+      - name: Build the binary
+        run: make build
+
+      - name: Deploy to Server
+        env:
+          USER: deploy
+          HOST: projectreshoot.com
+          DIR: /home/deploy/releases/staging
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          echo "Host *" > ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+
+          ssh -i ~/.ssh/id_ed25519 $USER@$HOST mkdir -p $DIR
+
+          scp -i ~/.ssh/id_ed25519 projectreshoot-${GITHUB_SHA} $USER@$HOST:$DIR
+
+          ssh -i ~/.ssh/id_ed25519 $USER@$HOST 'bash -s' < ./deploy/deploy.sh $GITHUB_SHA

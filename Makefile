@@ -7,7 +7,7 @@ build:
 	go mod tidy && \
    	templ generate && \
 	go generate && \
-	go build -ldflags="-w -s" -o ${BINARY_NAME}
+	go build -ldflags="-w -s" -o ${BINARY_NAME}${SUFFIX}
 
 dev:
 	templ generate --watch &\

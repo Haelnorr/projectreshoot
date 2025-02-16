@@ -31,7 +31,7 @@ jobs:
         run: make test
 
       - name: Build the binary
-        run: make build
+        run: make build SUFFIX=-staging-$GITHUB_SHA
 
       - name: Deploy to Server
         env:

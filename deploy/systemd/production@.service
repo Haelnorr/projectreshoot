@@ -1,0 +1,27 @@
+[Unit]
+Description=Project Reshoot %i
+After=network.target
+
+[Service]
+ExecStart=/home/deploy/production/projectreshoot
+WorkingDirectory=/home/deploy/production
+User=deploy
+Group=deploy
+EnvironmentFile=/etc/env/projectreshoot.env
+Environment="HOST=127.0.0.1"
+Environment="PORT=%i"
+Environment="TRUSTED_HOST=projectreshoot.com"
+Environment="SSL=true"
+Environment="GZIP=true"
+Environment="LOG_LEVEL=info"
+Environment="LOG_OUTPUT=file"
+Environment="LOG_DIR=/home/deploy/production/logs"
+LimitNOFILE=65536
+Restart=on-failure
+TimeoutSec=30
+PrivateTmp=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -4,10 +4,11 @@
 BINARY_NAME=projectreshoot
 
 build:
+	tailwindcss -i ./static/css/input.css -o ./static/css/output.css && \
 	go mod tidy && \
    	templ generate && \
 	go generate && \
-	go build -ldflags="-w -s" -o ${BINARY_NAME}
+	go build -ldflags="-w -s" -o ${BINARY_NAME}${SUFFIX}
 
 dev:
 	templ generate --watch &\
@@ -19,9 +20,11 @@ tester:
 	go run . --port 3232 --test --loglevel trace
 
 test:
+	rm -f **/.projectreshoot-test-database.db && \
 	go mod tidy && \
-	go test . -v
-	go test ./middleware -v
+   	templ generate && \
+	go generate && \
+	go test ./middleware
 
 clean:
 	go clean

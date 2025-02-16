@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -21,6 +22,26 @@ import (
 
 	"github.com/pkg/errors"
 )
+
+//go:embed static/*
+var embeddedStatic embed.FS
+
+// Gets the static files
+func getStaticFiles() (http.FileSystem, error) {
+	if _, err := os.Stat("static"); err == nil {
+		// Use actual filesystem in development
+		fmt.Println("Using filesystem for static files")
+		return http.Dir("static"), nil
+	} else {
+		// Use embedded filesystem in production
+		fmt.Println("Using embedded static files")
+		subFS, err := fs.Sub(embeddedStatic, "static")
+		if err != nil {
+			return nil, errors.Wrap(err, "fs.Sub")
+		}
+		return http.FS(subFS), nil
+	}
+}
 
 // Initializes and runs the server
 func run(ctx context.Context, w io.Writer, args map[string]string) error {
@@ -62,7 +83,12 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	}
 	defer conn.Close()
 
-	srv := server.NewServer(config, logger, conn)
+	staticFS, err := getStaticFiles()
+	if err != nil {
+		return errors.Wrap(err, "getStaticFiles")
+	}
+
+	srv := server.NewServer(config, logger, conn, &staticFS)
 	httpServer := &http.Server{
 		Addr:              net.JoinHostPort(config.Host, config.Port),
 		Handler:           srv,
@@ -100,9 +126,6 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	fmt.Fprintln(w, "Shutting down")
 	return nil
 }
-
-//go:embed static/*
-var static embed.FS
 
 // Start of runtime. Parse commandline arguments & flags, Initializes context
 // and starts the server

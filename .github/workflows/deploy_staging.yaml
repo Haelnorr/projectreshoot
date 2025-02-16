@@ -50,6 +50,6 @@ jobs:
 
           ssh -i ~/.ssh/id_ed25519 $USER@$HOST mkdir -p $DIR
 
-          scp -i ~/.ssh/id_ed25519 projectreshoot-${GITHUB_SHA} $USER@$HOST:$DIR
+          scp -i ~/.ssh/id_ed25519 projectreshoot-staging-${GITHUB_SHA} $USER@$HOST:$DIR
 
           ssh -i ~/.ssh/id_ed25519 $USER@$HOST 'bash -s' < ./deploy/deploy.sh $GITHUB_SHA

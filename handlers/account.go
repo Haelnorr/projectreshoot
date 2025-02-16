@@ -19,9 +19,9 @@ func HandleAccountPage() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("subpage")
-			subpage := cookie.Value
-			if err != nil {
-				subpage = "General"
+			subpage := "General"
+			if err == nil {
+				subpage = cookie.Value
 			}
 			page.Account(subpage).Render(r.Context(), w)
 		},

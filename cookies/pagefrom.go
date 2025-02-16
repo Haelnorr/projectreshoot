@@ -32,6 +32,5 @@ func SetPageFrom(w http.ResponseWriter, r *http.Request, trustedHost string) {
 	} else {
 		pageFrom = parsedURL.Path
 	}
-	pageFromCookie := &http.Cookie{Name: "pagefrom", Value: pageFrom, Path: "/"}
-	http.SetCookie(w, pageFromCookie)
+	SetCookie(w, "pagefrom", "/", pageFrom, 0)
 }

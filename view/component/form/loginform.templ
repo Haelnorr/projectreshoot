@@ -1,31 +1,34 @@
 package form
 
-import "fmt"
-
 // Login Form. If loginError is not an empty string, it will display the
 // contents of loginError to the user.
 // If loginError is "Username or password incorrect" it will also show
 // error icons on the username and password field
 templ LoginForm(loginError string) {
-	{{
-	errCreds := "false"
-	if loginError == "Username or password incorrect" {
-		errCreds = "true"
-	}
-	xdata := fmt.Sprintf(
-		"{credentialError: %s, errorMessage: '%s'}",
-		errCreds,
-		loginError,
-	)
-	}}
+	{{ credErr := "Username or password incorrect" }}
 	<form
 		hx-post="/login"
-		x-data="{ submitted: false, buttontext: 'Login' }"
+		x-data={ templ.JSFuncCall(
+                "loginFormData", loginError, credErr,
+                ).CallInline }
 		x-on:htmx:xhr:loadstart="submitted=true;buttontext='Loading...'"
 	>
+		<script>
+            function loginFormData(err, credError) {
+                return {
+                    submitted: false,
+                    buttontext: 'Login',
+                    errorMessage: err, 
+                    credentialError: err === credError ? true : false,
+                    resetErr() {
+                        this.errorMessage = "";
+                        this.credentialError = false;
+                    },
+                };
+            }
+        </script>
 		<div
 			class="grid gap-y-4"
-			x-data={ xdata }
 		>
 			<!-- Form Group -->
 			<div>
@@ -44,6 +47,7 @@ templ LoginForm(loginError string) {
                         disabled:pointer-events-none"
 						required
 						aria-describedby="username-error"
+						@input="resetErr()"
 					/>
 					<div
 						class="absolute inset-y-0 end-0 
@@ -93,6 +97,7 @@ templ LoginForm(loginError string) {
                         disabled:opacity-50 disabled:pointer-events-none"
 						required
 						aria-describedby="password-error"
+						@input="resetErr()"
 					/>
 					<div
 						class="absolute inset-y-0 end-0 

@@ -1,22 +1,27 @@
 package form
 
-import "fmt"
-
 templ ConfirmPassword(err string) {
-	{{
-	xdata := fmt.Sprintf(
-		"{ errMsg: '%s'}",
-		err,
-	)
-	}}
 	<form
 		hx-post="/reauthenticate"
-		x-data="{ submitted: false, buttontext: 'Confirm' }"
+		x-data={ templ.JSFuncCall(
+                "confirmPassData", err,
+                ).CallInline }
 		x-on:htmx:xhr:loadstart="submitted=true;buttontext='Loading...'"
 	>
+		<script>
+            function usernameComponent(err) {
+                return {
+                    submitted: false,
+                    buttontext: 'Confirm', 
+                    err: err,
+                    reset() {
+                        this.err = "";
+                    },
+                };
+            }
+        </script>
 		<div
 			class="grid gap-y-4"
-			x-data={ xdata }
 		>
 			<div class="mt-5">
 				<div class="relative">
@@ -30,6 +35,7 @@ templ ConfirmPassword(err string) {
 						placeholder="Confirm password"
 						required
 						aria-describedby="password-error"
+						@input="reset()"
 					/>
 					<div
 						class="absolute inset-y-0 end-0 
@@ -52,7 +58,8 @@ templ ConfirmPassword(err string) {
                                 1 0 1 0 0 2 1 1 0 0 0 0-2z"
 							></path>
 						</svg>
-					</div>
+					</div> - change username
+					- confirm password
 				</div>
 				<p
 					class="text-center text-xs text-red mt-2"

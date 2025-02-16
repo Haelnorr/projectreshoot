@@ -43,7 +43,7 @@ templ Global() {
                 // htmx.logAll();
             </script>
 			<script>
-                const popups = {
+                const bodyData = {
                     showError: false,
                     showConfirmPasswordModal: false,
                     handleHtmxBeforeOnLoad(event) {
@@ -78,7 +78,7 @@ templ Global() {
 		</head>
 		<body
 			class="bg-base text-text ubuntu-mono-regular overflow-x-hidden"
-			x-data="popups"
+			x-data="bodyData"
 			x-on:htmx:error="handleHtmxError($event)"
 			x-on:htmx:before-on-load="handleHtmxBeforeOnLoad($event)"
 		>

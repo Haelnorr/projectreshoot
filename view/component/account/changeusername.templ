@@ -13,11 +13,25 @@ templ ChangeUsername(err string, username string) {
 		hx-post="/change-username"
 		hx-swap="outerHTML"
 		class="w-[90%] mx-auto mt-5"
-		x-data={ "{ err: '" + err + "'}" }
+		x-data={ templ.JSFuncCall(
+                    "usernameComponent", username, user.Username, err,
+                    ).CallInline }
 	>
+		<script>
+            function usernameComponent(newUsername, oldUsername, err) {
+                return {
+                    username: newUsername,
+                    initialUsername: oldUsername, 
+                    err: err,
+                    resetUsername() {
+                        this.username = this.initialUsername;
+                        this.err = "";
+                    },
+                };
+            }
+        </script>
 		<div
 			class="flex flex-col sm:flex-row"
-			x-data={ "{username: '" + username + "'}" }
 		>
 			<div
 				class="flex flex-col sm:flex-row sm:items-center relative"
@@ -65,7 +79,7 @@ templ ChangeUsername(err string, username string) {
 					class="rounded-lg bg-blue py-1 px-2 text-mantle sm:ml-2
                 hover:cursor-pointer hover:bg-blue/75 transition"
 					x-cloak
-					x-show={ "username !=='" + user.Username + "'" }
+					x-show="username !== initialUsername"
 					x-transition.opacity.duration.500ms
 				>
 					Update
@@ -76,9 +90,9 @@ templ ChangeUsername(err string, username string) {
 					type="button"
 					href="#"
 					x-cloak
-					x-show={ "username !=='" + user.Username + "'" }
+					x-show="username !== initialUsername"
 					x-transition.opacity.duration.500ms
-					@click={ "username='" + user.Username + "';err=''" }
+					@click="resetUsername()"
 				>
 					Cancel
 				</button>

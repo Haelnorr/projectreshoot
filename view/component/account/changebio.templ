@@ -15,6 +15,41 @@ templ ChangeBio(err string, bio string) {
 		class="w-[90%] mx-auto mt-5"
 		x-data={ templ.JSFuncCall("bioComponent", bio, user.Bio, err).CallInline }
 	>
+		<script>
+            function bioComponent(newBio, oldBio, err) {
+                return {
+                    bio: newBio,
+                    initialBio: oldBio, 
+                    err: err,
+                    bioLenText: '', 
+                    updateTextArea() {
+                        this.$nextTick(() => {
+                            if (this.$refs.bio) {
+                                this.$refs.bio.style.height = 'auto';
+                                this.$refs.bio.style.height = `
+                                    ${this.$refs.bio.scrollHeight+20}px`;
+                            };
+                            this.bioLenText = `${this.bio.length}/128`;
+                        });
+                    },
+                    resetBio() {
+                        this.bio = this.initialBio;
+                        this.err = "",
+                        this.updateTextArea();
+                    },
+                    init() {
+                        this.$nextTick(() => {
+                            // this timeout makes sure the textarea resizes on 
+                            // page render correctly. seems 20ms is the sweet
+                            // spot between a noticable delay and not working
+                            setTimeout(() => {
+                                this.updateTextArea();
+                            }, 20);
+                        });
+                    }
+                };
+            }
+        </script>
 		<div
 			class="flex flex-col"
 		>
@@ -78,40 +113,5 @@ templ ChangeBio(err string, bio string) {
 			x-show="err"
 			x-text="err"
 		></p>
-		<script>
-            function bioComponent(newBio, oldBio, err) {
-                return {
-                    bio: newBio,
-                    initialBio: oldBio, 
-                    err: err,
-                    bioLenText: '', 
-                    updateTextArea() {
-                        this.$nextTick(() => {
-                            if (this.$refs.bio) {
-                                this.$refs.bio.style.height = 'auto';
-                                this.$refs.bio.style.height = `
-                                    ${this.$refs.bio.scrollHeight+20}px`;
-                            };
-                            this.bioLenText = `${this.bio.length}/128`;
-                        });
-                    },
-                    resetBio() {
-                        this.bio = this.initialBio;
-                        this.err = "",
-                        this.updateTextArea();
-                    },
-                    init() {
-                        this.$nextTick(() => {
-                            // this timeout makes sure the textarea resizes on 
-                            // page render correctly. seems 20ms is the sweet
-                            // spot between a noticable delay and not working
-                            setTimeout(() => {
-                                this.updateTextArea();
-                            }, 20);
-                        });
-                    }
-                };
-            }
-        </script>
 	</form>
 }

@@ -27,9 +27,6 @@ jobs:
           chmod +x tailwindcss
           sudo mv tailwindcss /usr/local/bin/
 
-      - name: Run init
-        run: make init
-
       - name: Run tests
         run: make test
 

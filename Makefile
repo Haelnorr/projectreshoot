@@ -26,9 +26,3 @@ test:
 
 clean:
 	go clean
-
-
-init:
-	go mod init projectreshoot
-	go mod tidy
-	go generate

@@ -53,7 +53,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 	if args["port"] != "" {
 		port = args["port"]
 	} else {
-		port = GetEnvDefault("PORT", "3333")
+		port = GetEnvDefault("PORT", "3010")
 	}
 	if args["loglevel"] != "" {
 		logLevel = logging.GetLogLevel(args["loglevel"])

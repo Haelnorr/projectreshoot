@@ -7,6 +7,7 @@ ExecStart=/home/deploy/production/projectreshoot
 WorkingDirectory=/home/deploy/production
 User=deploy
 Group=deploy
+EnvironmentFile=/etc/env/projectreshoot.env
 Environment="HOST=0.0.0.0"
 Environment="PORT=3000"
 Environment="TRUSTED_HOST=projectreshoot.com"

@@ -21,6 +21,7 @@ tester:
 test:
 	rm -f **/.projectreshoot-test-database.db
 	go mod tidy && \
+   	templ generate && \
 	go generate && \
 	go test ./...
 

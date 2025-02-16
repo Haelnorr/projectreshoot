@@ -20,8 +20,6 @@ LimitNOFILE=65536
 Restart=on-failure
 TimeoutSec=30
 PrivateTmp=true
-NoNewPrivilages=true
-AmbientCapabilites=CAP_NET_BIND_SERVICE
 StandardOutput=journal
 StandardError=journal
 

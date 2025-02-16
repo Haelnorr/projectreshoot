@@ -1,0 +1,12 @@
+projectreshoot.com {
+    reverse_proxy localhost:3000 localhost:3001 localhost:3002 {
+        health_uri /healthz
+            fail_duration 30s
+    }
+}
+staging.projectreshoot.com {
+    reverse_proxy localhost:3005 localhost:3006 localhost:3007 {
+        health_uri /healthz
+            fail_duration 30s
+    }
+}

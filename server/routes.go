@@ -91,4 +91,10 @@ func addRoutes(
 		middleware.RequiresLogin(
 			handlers.HandleChangeBio(logger, conn),
 		))
+	mux.Handle("POST /change-password",
+		middleware.RequiresLogin(
+			middleware.RequiresFresh(
+				handlers.HandleChangePassword(logger, conn),
+			),
+		))
 }

@@ -9,11 +9,11 @@ templ ConfirmPassword(err string) {
 		x-on:htmx:xhr:loadstart="submitted=true;buttontext='Loading...'"
 	>
 		<script>
-            function usernameComponent(err) {
+            function confirmPassData(err) {
                 return {
                     submitted: false,
                     buttontext: 'Confirm', 
-                    err: err,
+                    errMsg: err,
                     reset() {
                         this.err = "";
                     },
@@ -58,8 +58,7 @@ templ ConfirmPassword(err string) {
                                 1 0 1 0 0 2 1 1 0 0 0 0-2z"
 							></path>
 						</svg>
-					</div> - change username
-					- confirm password
+					</div>
 				</div>
 				<p
 					class="text-center text-xs text-red mt-2"

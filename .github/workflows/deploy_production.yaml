@@ -1,4 +1,4 @@
-name: Deploy Staging to Server
+name: Deploy Master (Production) to Server
 
 on:
   push:

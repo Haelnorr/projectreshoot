@@ -121,17 +121,6 @@ func (conn *SafeConn) Close() error {
 }
 
 // Returns a database connection handle for the DB
-func OldConnectToDatabase(dbName string) (*sql.DB, error) {
-	file := fmt.Sprintf("file:%s.db", dbName)
-	db, err := sql.Open("sqlite", file)
-	if err != nil {
-		return nil, errors.Wrap(err, "sql.Open")
-	}
-
-	return db, nil
-}
-
-// Returns a database connection handle for the DB
 func ConnectToDatabase(dbName string) (*SafeConn, error) {
 	file := fmt.Sprintf("file:%s.db", dbName)
 	db, err := sql.Open("sqlite", file)

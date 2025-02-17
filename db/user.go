@@ -1,7 +1,7 @@
 package db
 
 import (
-	"database/sql"
+	"context"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
@@ -16,16 +16,16 @@ type User struct {
 }
 
 // Uses bcrypt to set the users Password_hash from the given password
-func (user *User) SetPassword(conn *sql.DB, password string) error {
+func (user *User) SetPassword(ctx context.Context, tx *SafeTX, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return errors.Wrap(err, "bcrypt.GenerateFromPassword")
 	}
 	user.Password_hash = string(hashedPassword)
 	query := `UPDATE users SET password_hash = ? WHERE id = ?`
-	_, err = conn.Exec(query, user.Password_hash, user.ID)
+	_, err = tx.Exec(ctx, query, user.Password_hash, user.ID)
 	if err != nil {
-		return errors.Wrap(err, "conn.Exec")
+		return errors.Wrap(err, "tx.Exec")
 	}
 	return nil
 }
@@ -40,21 +40,21 @@ func (user *User) CheckPassword(password string) error {
 }
 
 // Change the user's username
-func (user *User) ChangeUsername(conn *sql.DB, newUsername string) error {
+func (user *User) ChangeUsername(ctx context.Context, tx *SafeTX, newUsername string) error {
 	query := `UPDATE users SET username = ? WHERE id = ?`
-	_, err := conn.Exec(query, newUsername, user.ID)
+	_, err := tx.Exec(ctx, query, newUsername, user.ID)
 	if err != nil {
-		return errors.Wrap(err, "conn.Exec")
+		return errors.Wrap(err, "tx.Exec")
 	}
 	return nil
 }
 
 // Change the user's bio
-func (user *User) ChangeBio(conn *sql.DB, newBio string) error {
+func (user *User) ChangeBio(ctx context.Context, tx *SafeTX, newBio string) error {
 	query := `UPDATE users SET bio = ? WHERE id = ?`
-	_, err := conn.Exec(query, newBio, user.ID)
+	_, err := tx.Exec(ctx, query, newBio, user.ID)
 	if err != nil {
-		return errors.Wrap(err, "conn.Exec")
+		return errors.Wrap(err, "tx.Exec")
 	}
 	return nil
 }

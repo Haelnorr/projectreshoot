@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"net/http"
 
 	"projectreshoot/config"
@@ -18,7 +17,6 @@ func addRoutes(
 	mux *http.ServeMux,
 	logger *zerolog.Logger,
 	config *config.Config,
-	oldconn *sql.DB,
 	conn *db.SafeConn,
 	staticFS *http.FileSystem,
 ) {
@@ -44,7 +42,7 @@ func addRoutes(
 			handlers.HandleLoginRequest(
 				config,
 				logger,
-				oldconn,
+				conn,
 			)))
 
 	// Register page and handlers
@@ -57,7 +55,7 @@ func addRoutes(
 			handlers.HandleRegisterRequest(
 				config,
 				logger,
-				oldconn,
+				conn,
 			)))
 
 	// Logout
@@ -87,17 +85,17 @@ func addRoutes(
 	mux.Handle("POST /change-username",
 		middleware.RequiresLogin(
 			middleware.RequiresFresh(
-				handlers.HandleChangeUsername(logger, oldconn),
+				handlers.HandleChangeUsername(logger, conn),
 			),
 		))
 	mux.Handle("POST /change-bio",
 		middleware.RequiresLogin(
-			handlers.HandleChangeBio(logger, oldconn),
+			handlers.HandleChangeBio(logger, conn),
 		))
 	mux.Handle("POST /change-password",
 		middleware.RequiresLogin(
 			middleware.RequiresFresh(
-				handlers.HandleChangePassword(logger, oldconn),
+				handlers.HandleChangePassword(logger, conn),
 			),
 		))
 }

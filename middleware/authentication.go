@@ -107,7 +107,6 @@ func Authentication(
 		}
 		handlers.WithTransaction(w, r, logger, conn,
 			func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
-				tx, err := conn.Begin(ctx)
 				user, err := getAuthenticatedUser(config, ctx, tx, w, r)
 				if err != nil {
 					tx.Rollback()

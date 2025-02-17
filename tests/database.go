@@ -1,16 +1,14 @@
 package tests
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
-	"projectreshoot/db"
 
 	"github.com/pkg/errors"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func findSQLFile(filename string) (string, error) {
@@ -33,16 +31,10 @@ func findSQLFile(filename string) (string, error) {
 }
 
 // SetupTestDB initializes a test SQLite database with mock data
-// Make sure to call DeleteTestDB when finished to cleanup
-func SetupTestDB(ctx context.Context) (*db.SafeConn, error) {
-	dbfile, err := sql.Open("sqlite3", "file:.projectreshoot-test-database.db")
+func SetupTestDB() (*sql.DB, error) {
+	conn, err := sql.Open("sqlite", "file::memory:?cache=shared")
 	if err != nil {
 		return nil, errors.Wrap(err, "sql.Open")
-	}
-	conn := db.MakeSafe(dbfile)
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "conn.Begin")
 	}
 	// Setup the test database
 	schemaPath, err := findSQLFile("schema.sql")
@@ -56,9 +48,8 @@ func SetupTestDB(ctx context.Context) (*db.SafeConn, error) {
 	}
 	schemaSQL := string(sqlBytes)
 
-	_, err = tx.Exec(ctx, schemaSQL)
+	_, err = conn.Exec(schemaSQL)
 	if err != nil {
-		tx.Rollback()
 		return nil, errors.Wrap(err, "tx.Exec")
 	}
 	// Load the test data
@@ -72,24 +63,9 @@ func SetupTestDB(ctx context.Context) (*db.SafeConn, error) {
 	}
 	dataSQL := string(sqlBytes)
 
-	_, err = tx.Exec(ctx, dataSQL)
+	_, err = conn.Exec(dataSQL)
 	if err != nil {
-		tx.Rollback()
 		return nil, errors.Wrap(err, "tx.Exec")
 	}
-	tx.Commit()
 	return conn, nil
-}
-
-// Deletes the test database from disk
-func DeleteTestDB() error {
-	fileName := ".projectreshoot-test-database.db"
-
-	// Attempt to remove the file
-	err := os.Remove(fileName)
-	if err != nil {
-		return errors.Wrap(err, "os.Remove")
-	}
-
-	return nil
 }

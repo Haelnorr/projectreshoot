@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"net/http"
 
 	"projectreshoot/config"
@@ -15,7 +14,6 @@ import (
 func NewServer(
 	config *config.Config,
 	logger *zerolog.Logger,
-	oldconn *sql.DB,
 	conn *db.SafeConn,
 	staticFS *http.FileSystem,
 ) http.Handler {
@@ -24,7 +22,6 @@ func NewServer(
 		mux,
 		logger,
 		config,
-		oldconn,
 		conn,
 		staticFS,
 	)

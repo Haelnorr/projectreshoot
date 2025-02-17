@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"projectreshoot/contexts"
+	"projectreshoot/db"
 	"projectreshoot/tests"
 
 	"github.com/stretchr/testify/assert"
@@ -16,13 +17,14 @@ import (
 
 func TestAuthenticationMiddleware(t *testing.T) {
 	// Basic setup
+	conn, err := tests.SetupTestDB()
+	require.NoError(t, err)
+	sconn := db.MakeSafe(conn)
+	defer sconn.Close()
+
 	cfg, err := tests.TestConfig()
 	require.NoError(t, err)
-	logger := tests.NilLogger()
-	conn, err := tests.SetupTestDB(t.Context())
-	require.NoError(t, err)
-	require.NotNil(t, conn)
-	defer tests.DeleteTestDB()
+	logger := tests.DebugLogger(t)
 
 	// Handler to check outcome of Authentication middleware
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +40,7 @@ func TestAuthenticationMiddleware(t *testing.T) {
 	})
 
 	// Add the middleware and create the server
-	authHandler := Authentication(logger, cfg, conn, testHandler)
+	authHandler := Authentication(logger, cfg, sconn, testHandler)
 	require.NoError(t, err)
 	server := httptest.NewServer(authHandler)
 	defer server.Close()

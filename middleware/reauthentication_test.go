@@ -5,21 +5,23 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"projectreshoot/db"
 	"projectreshoot/tests"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestActionReauthRequired(t *testing.T) {
+func TestReauthRequired(t *testing.T) {
 	// Basic setup
+	conn, err := tests.SetupTestDB()
+	require.NoError(t, err)
+	sconn := db.MakeSafe(conn)
+	defer sconn.Close()
+
 	cfg, err := tests.TestConfig()
 	require.NoError(t, err)
-	logger := tests.NilLogger()
-	conn, err := tests.SetupTestDB(t.Context())
-	require.NoError(t, err)
-	require.NotNil(t, conn)
-	defer tests.DeleteTestDB()
+	logger := tests.DebugLogger(t)
 
 	// Handler to check outcome of Authentication middleware
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +31,7 @@ func TestActionReauthRequired(t *testing.T) {
 	// Add the middleware and create the server
 	reauthRequiredHandler := RequiresFresh(testHandler)
 	loginRequiredHandler := RequiresLogin(reauthRequiredHandler)
-	authHandler := Authentication(logger, cfg, conn, loginRequiredHandler)
+	authHandler := Authentication(logger, cfg, sconn, loginRequiredHandler)
 	server := httptest.NewServer(authHandler)
 	defer server.Close()
 

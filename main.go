@@ -13,6 +13,8 @@ import (
 	"os/signal"
 	"strconv"
 	"sync"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"projectreshoot/config"
@@ -41,6 +43,36 @@ func getStaticFiles() (http.FileSystem, error) {
 		}
 		return http.FS(subFS), nil
 	}
+}
+
+var maint uint32 // atomic: 1 if in maintenance mode
+
+func handleMaintSignals(conn *db.SafeConn, srv *http.Server) {
+	ch := make(chan os.Signal, 1)
+	srv.RegisterOnShutdown(func() {
+		close(ch)
+	})
+	go func() {
+		for sig := range ch {
+			switch sig {
+			case syscall.SIGUSR1:
+				if atomic.LoadUint32(&maint) != 1 {
+					atomic.StoreUint32(&maint, 1)
+					fmt.Println("Signal received: Starting maintenance")
+					fmt.Println("Attempting to acquire database lock")
+					conn.Pause()
+				}
+			case syscall.SIGUSR2:
+				if atomic.LoadUint32(&maint) != 0 {
+					fmt.Println("Signal received: Maintenance over")
+					fmt.Println("Releasing database lock")
+					conn.Resume()
+					atomic.StoreUint32(&maint, 0)
+				}
+			}
+		}
+	}()
+	signal.Notify(ch, syscall.SIGUSR1, syscall.SIGUSR2)
 }
 
 // Initializes and runs the server
@@ -103,6 +135,10 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		return nil
 	}
 
+	// Setups a channel to listen for os.Signal
+	handleMaintSignals(conn, httpServer)
+
+	// Runs the http server
 	go func() {
 		fmt.Fprintf(w, "Listening on %s\n", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -110,6 +146,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		}
 	}()
 
+	// Handles graceful shutdown
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {

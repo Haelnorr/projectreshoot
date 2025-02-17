@@ -4,17 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 
 	_ "modernc.org/sqlite"
 )
 
-// Wraps the database handle, providing a mutex to safely manage transactions
 type SafeConn struct {
-	db  *sql.DB
-	mux sync.RWMutex
+	db               *sql.DB
+	readLockCount    int32
+	globalLockStatus int32
 }
 
 func MakeSafe(db *sql.DB) *SafeConn {
@@ -27,24 +27,63 @@ type SafeTX struct {
 	sc *SafeConn
 }
 
+func (conn *SafeConn) acquireGlobalLock() bool {
+	if atomic.LoadInt32(&conn.readLockCount) > 0 || atomic.LoadInt32(&conn.globalLockStatus) == 1 {
+		return false
+	}
+	atomic.StoreInt32(&conn.globalLockStatus, 1)
+	fmt.Println("=====================GLOBAL LOCK ACQUIRED==================")
+	return true
+}
+
+func (conn *SafeConn) releaseGlobalLock() {
+	atomic.StoreInt32(&conn.globalLockStatus, 0)
+	fmt.Println("=====================GLOBAL LOCK RELEASED==================")
+}
+
+func (conn *SafeConn) acquireReadLock() bool {
+	if atomic.LoadInt32(&conn.globalLockStatus) == 1 {
+		return false
+	}
+	atomic.AddInt32(&conn.readLockCount, 1)
+	fmt.Println("=====================READ LOCK ACQUIRED==================")
+	return true
+}
+
+func (conn *SafeConn) releaseReadLock() {
+	atomic.AddInt32(&conn.readLockCount, -1)
+	fmt.Println("=====================READ LOCK RELEASED==================")
+}
+
 // Starts a new transaction based on the current context. Will cancel if
 // the context is closed/cancelled/done
 func (conn *SafeConn) Begin(ctx context.Context) (*SafeTX, error) {
 	lockAcquired := make(chan struct{})
+	lockCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	go func() {
-		conn.mux.RLock()
-		close(lockAcquired)
+		select {
+		case <-lockCtx.Done():
+			fmt.Println("=====================READ LOCK ABANDONED==================")
+			return
+		default:
+			if conn.acquireReadLock() {
+				close(lockAcquired) // Lock acquired
+			}
+		}
 	}()
 
 	select {
 	case <-lockAcquired:
 		tx, err := conn.db.BeginTx(ctx, nil)
 		if err != nil {
-			conn.mux.RUnlock()
+			conn.releaseReadLock()
 			return nil, err
 		}
 		return &SafeTX{tx: tx, sc: conn}, nil
 	case <-ctx.Done():
+		cancel()
 		return nil, errors.New("Transaction time out due to database lock")
 	}
 }
@@ -81,7 +120,7 @@ func (stx *SafeTX) Commit() error {
 	err := stx.tx.Commit()
 	stx.tx = nil
 
-	stx.releaseLock()
+	stx.sc.releaseReadLock()
 	return err
 }
 
@@ -92,31 +131,30 @@ func (stx *SafeTX) Rollback() error {
 	}
 	err := stx.tx.Rollback()
 	stx.tx = nil
-	stx.releaseLock()
+	stx.sc.releaseReadLock()
 	return err
-}
-
-// Release the read lock for the transaction
-func (stx *SafeTX) releaseLock() {
-	if stx.sc != nil {
-		stx.sc.mux.RUnlock()
-	}
 }
 
 // Pause blocks new transactions for a backup.
 func (conn *SafeConn) Pause() {
-	conn.mux.Lock() // Blocks all new transactions
+	for !conn.acquireGlobalLock() {
+		// TODO: add a timeout?
+	}
+	fmt.Println("Global database lock acquired")
 }
 
 // Resume allows transactions to proceed.
 func (conn *SafeConn) Resume() {
-	conn.mux.Unlock()
+	conn.releaseGlobalLock()
+	fmt.Println("Global database lock released")
 }
 
 // Close the database connection
 func (conn *SafeConn) Close() error {
-	conn.mux.Lock()
-	defer conn.mux.Unlock()
+	fmt.Println("=====================DB LOCKING FOR SHUTDOWN==================")
+	conn.acquireGlobalLock()
+	defer conn.releaseGlobalLock()
+	fmt.Println("=====================DB LOCKED FOR SHUTDOWN==================")
 	return conn.db.Close()
 }
 

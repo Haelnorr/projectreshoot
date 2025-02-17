@@ -25,13 +25,12 @@ func WithTransaction(
 	),
 ) {
 	// Create a cancellable context from the request context
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 
 	// Start the transaction
 	tx, err := conn.Begin(ctx)
 	if err != nil {
-		tx.Rollback()
 		logger.Warn().Err(err).Msg("Request failed to start a transaction")
 		w.WriteHeader(http.StatusServiceUnavailable)
 		page.Error(

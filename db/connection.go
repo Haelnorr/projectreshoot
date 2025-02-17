@@ -112,13 +112,22 @@ func (conn *SafeConn) Resume() {
 	conn.mux.Unlock()
 }
 
+// Close the database connection
+func (conn *SafeConn) Close() error {
+	conn.mux.Lock()
+	defer conn.mux.Unlock()
+	return conn.db.Close()
+}
+
 // Returns a database connection handle for the Turso DB
-func ConnectToDatabase(dbName string) (*sql.DB, error) {
+func ConnectToDatabase(dbName string) (*SafeConn, error) {
 	file := fmt.Sprintf("file:%s.db", dbName)
 	db, err := sql.Open("sqlite3", file)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "sql.Open")
 	}
-	return db, nil
+
+	conn := &SafeConn{db: db}
+
+	return conn, nil
 }

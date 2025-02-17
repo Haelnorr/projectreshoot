@@ -115,8 +115,8 @@ func Authentication(
 		// Start the transaction
 		tx, err := conn.Begin(ctx)
 		if err != nil {
-			// Failed to start transaction, warn the user they cant login right now
-			logger.Warn().Err(err).Msg("Request failed to start a transaction")
+			// Failed to start transaction, send 503 code to client
+			logger.Warn().Err(err).Msg("Skipping Auth - unable to start a transaction")
 			w.WriteHeader(http.StatusServiceUnavailable)
 			next.ServeHTTP(w, r)
 			return

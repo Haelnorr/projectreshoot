@@ -4,21 +4,23 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync/atomic"
+	"os"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	_ "modernc.org/sqlite"
 )
 
 type SafeConn struct {
 	db               *sql.DB
-	readLockCount    int32
-	globalLockStatus int32
+	readLockCount    uint32
+	globalLockStatus uint32
+	logger           *zerolog.Logger
 }
 
-func MakeSafe(db *sql.DB) *SafeConn {
-	return &SafeConn{db: db}
+func MakeSafe(db *sql.DB, logger *zerolog.Logger) *SafeConn {
+	return &SafeConn{db: db, logger: logger}
 }
 
 // Extends sql.Tx for use with SafeConn
@@ -28,27 +30,35 @@ type SafeTX struct {
 }
 
 func (conn *SafeConn) acquireGlobalLock() bool {
-	if atomic.LoadInt32(&conn.readLockCount) > 0 || atomic.LoadInt32(&conn.globalLockStatus) == 1 {
+	if conn.readLockCount > 0 || conn.globalLockStatus == 1 {
 		return false
 	}
-	atomic.StoreInt32(&conn.globalLockStatus, 1)
+	conn.globalLockStatus = 1
+	conn.logger.Debug().Uint32("global_lock_status", conn.globalLockStatus).
+		Msg("Global lock acquired")
 	return true
 }
 
 func (conn *SafeConn) releaseGlobalLock() {
-	atomic.StoreInt32(&conn.globalLockStatus, 0)
+	conn.globalLockStatus = 0
+	conn.logger.Debug().Uint32("global_lock_status", conn.globalLockStatus).
+		Msg("Global lock released")
 }
 
 func (conn *SafeConn) acquireReadLock() bool {
-	if atomic.LoadInt32(&conn.globalLockStatus) == 1 {
+	if conn.globalLockStatus == 1 {
 		return false
 	}
-	atomic.AddInt32(&conn.readLockCount, 1)
+	conn.readLockCount += 1
+	conn.logger.Debug().Uint32("read_lock_count", conn.readLockCount).
+		Msg("Read lock acquired")
 	return true
 }
 
 func (conn *SafeConn) releaseReadLock() {
-	atomic.AddInt32(&conn.readLockCount, -1)
+	conn.readLockCount -= 1
+	conn.logger.Debug().Uint32("read_lock_count", conn.readLockCount).
+		Msg("Read lock released")
 }
 
 // Starts a new transaction based on the current context. Will cancel if
@@ -134,32 +144,40 @@ func (stx *SafeTX) Rollback() error {
 func (conn *SafeConn) Pause() {
 	for !conn.acquireGlobalLock() {
 		// TODO: add a timeout?
+		// TODO: failed to acquire lock: print info with readLockCount
+		// every second, or update it dynamically
 	}
-	fmt.Println("Global database lock acquired")
+	// force logger to log to Stdout
+	log := conn.logger.With().Logger().Output(os.Stdout)
+	log.Info().Msg("Global database lock acquired")
 }
 
 // Resume allows transactions to proceed.
 func (conn *SafeConn) Resume() {
 	conn.releaseGlobalLock()
-	fmt.Println("Global database lock released")
+	// force logger to log to Stdout
+	log := conn.logger.With().Logger().Output(os.Stdout)
+	log.Info().Msg("Global database lock released")
 }
 
 // Close the database connection
 func (conn *SafeConn) Close() error {
+	conn.logger.Debug().Msg("Acquiring global lock for connection close")
 	conn.acquireGlobalLock()
 	defer conn.releaseGlobalLock()
+	conn.logger.Debug().Msg("Closing database connection")
 	return conn.db.Close()
 }
 
 // Returns a database connection handle for the DB
-func ConnectToDatabase(dbName string) (*SafeConn, error) {
+func ConnectToDatabase(dbName string, logger *zerolog.Logger) (*SafeConn, error) {
 	file := fmt.Sprintf("file:%s.db", dbName)
 	db, err := sql.Open("sqlite", file)
 	if err != nil {
 		return nil, errors.Wrap(err, "sql.Open")
 	}
 
-	conn := MakeSafe(db)
+	conn := MakeSafe(db, logger)
 
 	return conn, nil
 }

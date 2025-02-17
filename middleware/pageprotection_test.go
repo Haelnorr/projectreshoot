@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"projectreshoot/db"
@@ -13,24 +14,26 @@ import (
 )
 
 func TestPageLoginRequired(t *testing.T) {
+	logger := tests.NilLogger()
 	// Basic setup
 	conn, err := tests.SetupTestDB()
 	require.NoError(t, err)
-	sconn := db.MakeSafe(conn)
+	sconn := db.MakeSafe(conn, logger)
 	defer sconn.Close()
 
 	cfg, err := tests.TestConfig()
 	require.NoError(t, err)
-	logger := tests.DebugLogger(t)
 
 	// Handler to check outcome of Authentication middleware
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	var maint uint32
+	atomic.StoreUint32(&maint, 0)
 	// Add the middleware and create the server
 	loginRequiredHandler := RequiresLogin(testHandler)
-	authHandler := Authentication(logger, cfg, sconn, loginRequiredHandler)
+	authHandler := Authentication(logger, cfg, sconn, loginRequiredHandler, &maint)
 	server := httptest.NewServer(authHandler)
 	defer server.Close()
 

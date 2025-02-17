@@ -23,20 +23,21 @@ import (
 	"projectreshoot/server"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 )
 
 //go:embed static/*
 var embeddedStatic embed.FS
 
 // Gets the static files
-func getStaticFiles() (http.FileSystem, error) {
+func getStaticFiles(logger *zerolog.Logger) (http.FileSystem, error) {
 	if _, err := os.Stat("static"); err == nil {
 		// Use actual filesystem in development
-		fmt.Println("Using filesystem for static files")
+		logger.Debug().Msg("Using filesystem for static files")
 		return http.Dir("static"), nil
 	} else {
 		// Use embedded filesystem in production
-		fmt.Println("Using embedded static files")
+		logger.Debug().Msg("Using embedded static files")
 		subFS, err := fs.Sub(embeddedStatic, "static")
 		if err != nil {
 			return nil, errors.Wrap(err, "fs.Sub")
@@ -47,7 +48,7 @@ func getStaticFiles() (http.FileSystem, error) {
 
 var maint uint32 // atomic: 1 if in maintenance mode
 
-func handleMaintSignals(conn *db.SafeConn, srv *http.Server) {
+func handleMaintSignals(conn *db.SafeConn, srv *http.Server, logger *zerolog.Logger) {
 	ch := make(chan os.Signal, 1)
 	srv.RegisterOnShutdown(func() {
 		close(ch)
@@ -58,14 +59,16 @@ func handleMaintSignals(conn *db.SafeConn, srv *http.Server) {
 			case syscall.SIGUSR1:
 				if atomic.LoadUint32(&maint) != 1 {
 					atomic.StoreUint32(&maint, 1)
-					fmt.Println("Signal received: Starting maintenance")
-					fmt.Println("Attempting to acquire database lock")
+					log := logger.With().Logger().Output(os.Stdout)
+					log.Info().Msg("Signal received: Starting maintenance")
+					log.Info().Msg("Attempting to acquire database lock")
 					conn.Pause()
 				}
 			case syscall.SIGUSR2:
 				if atomic.LoadUint32(&maint) != 0 {
-					fmt.Println("Signal received: Maintenance over")
-					fmt.Println("Releasing database lock")
+					log := logger.With().Logger().Output(os.Stdout)
+					log.Info().Msg("Signal received: Maintenance over")
+					log.Info().Msg("Releasing database lock")
 					conn.Resume()
 					atomic.StoreUint32(&maint, 0)
 				}
@@ -109,13 +112,13 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		return errors.Wrap(err, "logging.GetLogger")
 	}
 
-	conn, err := db.ConnectToDatabase(config.DBName)
+	conn, err := db.ConnectToDatabase(config.DBName, logger)
 	if err != nil {
 		return errors.Wrap(err, "db.ConnectToDatabase")
 	}
 	defer conn.Close()
 
-	staticFS, err := getStaticFiles()
+	staticFS, err := getStaticFiles(logger)
 	if err != nil {
 		return errors.Wrap(err, "getStaticFiles")
 	}
@@ -136,13 +139,13 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	}
 
 	// Setups a channel to listen for os.Signal
-	handleMaintSignals(conn, httpServer)
+	handleMaintSignals(conn, httpServer, logger)
 
 	// Runs the http server
 	go func() {
-		fmt.Fprintf(w, "Listening on %s\n", httpServer.Addr)
+		logger.Info().Str("address", httpServer.Addr).Msg("Listening for requests")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(os.Stderr, "Error listening and serving: %s\n", err)
+			logger.Error().Err(err).Msg("Error listening and serving")
 		}
 	}()
 
@@ -156,11 +159,11 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10*time.Second)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "Error shutting down http server: %s\n", err)
+			logger.Error().Err(err).Msg("Error shutting down server")
 		}
 	}()
 	wg.Wait()
-	fmt.Fprintln(w, "Shutting down")
+	logger.Info().Msg("Shutting down")
 	return nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"projectreshoot/config"
+	"projectreshoot/db"
 	"projectreshoot/middleware"
 
 	"github.com/rs/zerolog"
@@ -14,7 +15,8 @@ import (
 func NewServer(
 	config *config.Config,
 	logger *zerolog.Logger,
-	conn *sql.DB,
+	oldconn *sql.DB,
+	conn *db.SafeConn,
 	staticFS *http.FileSystem,
 ) http.Handler {
 	mux := http.NewServeMux()
@@ -22,6 +24,7 @@ func NewServer(
 		mux,
 		logger,
 		config,
+		oldconn,
 		conn,
 		staticFS,
 	)

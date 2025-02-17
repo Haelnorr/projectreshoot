@@ -77,6 +77,11 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		return errors.Wrap(err, "logging.GetLogger")
 	}
 
+	oldconn, err := db.OldConnectToDatabase(config.DBName)
+	if err != nil {
+		return errors.Wrap(err, "db.ConnectToDatabase")
+	}
+	defer oldconn.Close()
 	conn, err := db.ConnectToDatabase(config.DBName)
 	if err != nil {
 		return errors.Wrap(err, "db.ConnectToDatabase")
@@ -88,7 +93,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		return errors.Wrap(err, "getStaticFiles")
 	}
 
-	srv := server.NewServer(config, logger, conn, &staticFS)
+	srv := server.NewServer(config, logger, oldconn, conn, &staticFS)
 	httpServer := &http.Server{
 		Addr:              net.JoinHostPort(config.Host, config.Port),
 		Handler:           srv,
@@ -99,7 +104,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 
 	// Runs function for testing in dev if --test flag true
 	if args["test"] == "true" {
-		test(config, logger, conn, httpServer)
+		test(config, logger, oldconn, httpServer)
 		return nil
 	}
 

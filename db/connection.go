@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -18,17 +17,19 @@ type SafeConn struct {
 	mux sync.RWMutex
 }
 
+func MakeSafe(db *sql.DB) *SafeConn {
+	return &SafeConn{db: db}
+}
+
 // Extends sql.Tx for use with SafeConn
 type SafeTX struct {
 	tx *sql.Tx
 	sc *SafeConn
 }
 
-// Starts a new transaction, waiting up to 10 seconds if the database is locked
+// Starts a new transaction based on the current context. Will cancel if
+// the context is closed/cancelled/done
 func (conn *SafeConn) Begin(ctx context.Context) (*SafeTX, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
 	lockAcquired := make(chan struct{})
 	go func() {
 		conn.mux.RLock()
@@ -119,7 +120,18 @@ func (conn *SafeConn) Close() error {
 	return conn.db.Close()
 }
 
-// Returns a database connection handle for the Turso DB
+// Returns a database connection handle for the DB
+func OldConnectToDatabase(dbName string) (*sql.DB, error) {
+	file := fmt.Sprintf("file:%s.db", dbName)
+	db, err := sql.Open("sqlite3", file)
+	if err != nil {
+		return nil, errors.Wrap(err, "sql.Open")
+	}
+
+	return db, nil
+}
+
+// Returns a database connection handle for the DB
 func ConnectToDatabase(dbName string) (*SafeConn, error) {
 	file := fmt.Sprintf("file:%s.db", dbName)
 	db, err := sql.Open("sqlite3", file)
@@ -127,7 +139,7 @@ func ConnectToDatabase(dbName string) (*SafeConn, error) {
 		return nil, errors.Wrap(err, "sql.Open")
 	}
 
-	conn := &SafeConn{db: db}
+	conn := MakeSafe(db)
 
 	return conn, nil
 }

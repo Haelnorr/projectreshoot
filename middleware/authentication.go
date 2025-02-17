@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"database/sql"
+	"context"
 	"net/http"
 	"time"
 
@@ -9,6 +9,7 @@ import (
 	"projectreshoot/contexts"
 	"projectreshoot/cookies"
 	"projectreshoot/db"
+	"projectreshoot/handlers"
 	"projectreshoot/jwt"
 
 	"github.com/pkg/errors"
@@ -18,14 +19,15 @@ import (
 // Attempt to use a valid refresh token to generate a new token pair
 func refreshAuthTokens(
 	config *config.Config,
-	conn *sql.DB,
+	ctx context.Context,
+	tx *db.SafeTX,
 	w http.ResponseWriter,
 	req *http.Request,
 	ref *jwt.RefreshToken,
 ) (*db.User, error) {
-	user, err := ref.GetUser(conn)
+	user, err := ref.GetUser(ctx, tx)
 	if err != nil {
-		return nil, errors.Wrap(err, "rT.GetUser")
+		return nil, errors.Wrap(err, "ref.GetUser")
 	}
 
 	rememberMe := map[string]bool{
@@ -39,7 +41,7 @@ func refreshAuthTokens(
 		return nil, errors.Wrap(err, "cookies.SetTokenCookies")
 	}
 	// New tokens sent, revoke the used refresh token
-	err = jwt.RevokeToken(conn, ref)
+	err = jwt.RevokeToken(ctx, tx, ref)
 	if err != nil {
 		return nil, errors.Wrap(err, "jwt.RevokeToken")
 	}
@@ -50,22 +52,23 @@ func refreshAuthTokens(
 // Check the cookies for token strings and attempt to authenticate them
 func getAuthenticatedUser(
 	config *config.Config,
-	conn *sql.DB,
+	ctx context.Context,
+	tx *db.SafeTX,
 	w http.ResponseWriter,
 	r *http.Request,
 ) (*contexts.AuthenticatedUser, error) {
 	// Get token strings from cookies
 	atStr, rtStr := cookies.GetTokenStrings(r)
 	// Attempt to parse the access token
-	aT, err := jwt.ParseAccessToken(config, conn, atStr)
+	aT, err := jwt.ParseAccessToken(config, ctx, tx, atStr)
 	if err != nil {
 		// Access token invalid, attempt to parse refresh token
-		rT, err := jwt.ParseRefreshToken(config, conn, rtStr)
+		rT, err := jwt.ParseRefreshToken(config, ctx, tx, rtStr)
 		if err != nil {
 			return nil, errors.Wrap(err, "jwt.ParseRefreshToken")
 		}
 		// Refresh token valid, attempt to get a new token pair
-		user, err := refreshAuthTokens(config, conn, w, r, rT)
+		user, err := refreshAuthTokens(config, ctx, tx, w, r, rT)
 		if err != nil {
 			return nil, errors.Wrap(err, "refreshAuthTokens")
 		}
@@ -77,9 +80,9 @@ func getAuthenticatedUser(
 		return &authUser, nil
 	}
 	// Access token valid
-	user, err := aT.GetUser(conn)
+	user, err := aT.GetUser(ctx, tx)
 	if err != nil {
-		return nil, errors.Wrap(err, "rT.GetUser")
+		return nil, errors.Wrap(err, "aT.GetUser")
 	}
 	authUser := contexts.AuthenticatedUser{
 		User:  user,
@@ -93,22 +96,36 @@ func getAuthenticatedUser(
 func Authentication(
 	logger *zerolog.Logger,
 	config *config.Config,
-	conn *sql.DB,
+	conn *db.SafeConn,
 	next http.Handler,
 ) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := getAuthenticatedUser(config, conn, w, r)
-		if err != nil {
-			// User auth failed, delete the cookies to avoid repeat requests
-			cookies.DeleteCookie(w, "access", "/")
-			cookies.DeleteCookie(w, "refresh", "/")
-			logger.Debug().
-				Str("remote_addr", r.RemoteAddr).
-				Err(err).
-				Msg("Failed to authenticate user")
+		if r.URL.Path == "/static/css/output.css" ||
+			r.URL.Path == "/static/favicon.ico" {
+			next.ServeHTTP(w, r)
+			return
 		}
-		ctx := contexts.SetUser(r.Context(), user)
-		newReq := r.WithContext(ctx)
-		next.ServeHTTP(w, newReq)
+		handlers.WithTransaction(w, r, logger, conn,
+			func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
+				tx, err := conn.Begin(ctx)
+				user, err := getAuthenticatedUser(config, ctx, tx, w, r)
+				if err != nil {
+					tx.Rollback()
+					// User auth failed, delete the cookies to avoid repeat requests
+					cookies.DeleteCookie(w, "access", "/")
+					cookies.DeleteCookie(w, "refresh", "/")
+					logger.Debug().
+						Str("remote_addr", r.RemoteAddr).
+						Err(err).
+						Msg("Failed to authenticate user")
+					next.ServeHTTP(w, r)
+					return
+				}
+				tx.Commit()
+				uctx := contexts.SetUser(r.Context(), user)
+				newReq := r.WithContext(uctx)
+				next.ServeHTTP(w, newReq)
+			},
+		)
 	})
 }

@@ -1,41 +1,79 @@
 package handlers
 
 import (
-	"database/sql"
+	"context"
 	"net/http"
+	"strings"
+
 	"projectreshoot/config"
 	"projectreshoot/cookies"
+	"projectreshoot/db"
 	"projectreshoot/jwt"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
+func revokeAccess(
+	config *config.Config,
+	ctx context.Context,
+	tx *db.SafeTX,
+	atStr string,
+) error {
+	aT, err := jwt.ParseAccessToken(config, ctx, tx, atStr)
+	if err != nil {
+		if strings.Contains(err.Error(), "Token is expired") ||
+			strings.Contains(err.Error(), "Token has been revoked") {
+			return nil // Token is expired, dont need to revoke it
+		}
+		return errors.Wrap(err, "jwt.ParseAccessToken")
+	}
+	err = jwt.RevokeToken(ctx, tx, aT)
+	if err != nil {
+		return errors.Wrap(err, "jwt.RevokeToken")
+	}
+	return nil
+}
+
+func revokeRefresh(
+	config *config.Config,
+	ctx context.Context,
+	tx *db.SafeTX,
+	rtStr string,
+) error {
+	rT, err := jwt.ParseRefreshToken(config, ctx, tx, rtStr)
+	if err != nil {
+		if strings.Contains(err.Error(), "Token is expired") ||
+			strings.Contains(err.Error(), "Token has been revoked") {
+			return nil // Token is expired, dont need to revoke it
+		}
+		return errors.Wrap(err, "jwt.ParseRefreshToken")
+	}
+	err = jwt.RevokeToken(ctx, tx, rT)
+	if err != nil {
+		return errors.Wrap(err, "jwt.RevokeToken")
+	}
+	return nil
+}
+
 // Retrieve and revoke the user's tokens
 func revokeTokens(
 	config *config.Config,
-	conn *sql.DB,
+	ctx context.Context,
+	tx *db.SafeTX,
 	r *http.Request,
 ) error {
 	// get the tokens from the cookies
 	atStr, rtStr := cookies.GetTokenStrings(r)
-	aT, err := jwt.ParseAccessToken(config, conn, atStr)
-	if err != nil {
-		return errors.Wrap(err, "jwt.ParseAccessToken")
-	}
-	rT, err := jwt.ParseRefreshToken(config, conn, rtStr)
-	if err != nil {
-		return errors.Wrap(err, "jwt.ParseRefreshToken")
-	}
 	// revoke the refresh token first as the access token expires quicker
 	// only matters if there is an error revoking the tokens
-	err = jwt.RevokeToken(conn, rT)
+	err := revokeRefresh(config, ctx, tx, rtStr)
 	if err != nil {
-		return errors.Wrap(err, "jwt.RevokeToken")
+		return errors.Wrap(err, "revokeRefresh")
 	}
-	err = jwt.RevokeToken(conn, aT)
+	err = revokeAccess(config, ctx, tx, atStr)
 	if err != nil {
-		return errors.Wrap(err, "jwt.RevokeToken")
+		return errors.Wrap(err, "revokeAccess")
 	}
 	return nil
 }
@@ -44,19 +82,24 @@ func revokeTokens(
 func HandleLogout(
 	config *config.Config,
 	logger *zerolog.Logger,
-	conn *sql.DB,
+	conn *db.SafeConn,
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			err := revokeTokens(config, conn, r)
-			if err != nil {
-				logger.Error().Err(err).Msg("Error occured on user logout")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			cookies.DeleteCookie(w, "access", "/")
-			cookies.DeleteCookie(w, "refresh", "/")
-			w.Header().Set("HX-Redirect", "/login")
+			WithTransaction(w, r, logger, conn,
+				func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
+					err := revokeTokens(config, ctx, tx, r)
+					if err != nil {
+						tx.Rollback()
+						logger.Error().Err(err).Msg("Error occured on user logout")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					tx.Commit()
+					cookies.DeleteCookie(w, "access", "/")
+					cookies.DeleteCookie(w, "refresh", "/")
+					w.Header().Set("HX-Redirect", "/login")
+				})
 		},
 	)
 }

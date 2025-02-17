@@ -19,7 +19,7 @@ func TestAuthenticationMiddleware(t *testing.T) {
 	cfg, err := tests.TestConfig()
 	require.NoError(t, err)
 	logger := tests.NilLogger()
-	conn, err := tests.SetupTestDB()
+	conn, err := tests.SetupTestDB(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 	defer tests.DeleteTestDB()

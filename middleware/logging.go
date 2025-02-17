@@ -23,9 +23,14 @@ func (w *wrappedWriter) WriteHeader(statusCode int) {
 // Middleware to add logs to console with details of the request
 func Logging(logger *zerolog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/static/css/output.css" ||
+			r.URL.Path == "/static/favicon.ico" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		start, err := contexts.GetStartTime(r.Context())
 		if err != nil {
-			// Handle failure here. internal server error maybe
+			// TODO: Handle failure here. internal server error maybe
 			return
 		}
 		wrapped := &wrappedWriter{

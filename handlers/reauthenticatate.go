@@ -1,12 +1,13 @@
 package handlers
 
 import (
-	"database/sql"
+	"context"
 	"net/http"
 
 	"projectreshoot/config"
 	"projectreshoot/contexts"
 	"projectreshoot/cookies"
+	"projectreshoot/db"
 	"projectreshoot/jwt"
 	"projectreshoot/view/component/form"
 
@@ -17,16 +18,17 @@ import (
 // Get the tokens from the request
 func getTokens(
 	config *config.Config,
-	conn *sql.DB,
+	ctx context.Context,
+	tx *db.SafeTX,
 	r *http.Request,
 ) (*jwt.AccessToken, *jwt.RefreshToken, error) {
 	// get the existing tokens from the cookies
 	atStr, rtStr := cookies.GetTokenStrings(r)
-	aT, err := jwt.ParseAccessToken(config, conn, atStr)
+	aT, err := jwt.ParseAccessToken(config, ctx, tx, atStr)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "jwt.ParseAccessToken")
 	}
-	rT, err := jwt.ParseRefreshToken(config, conn, rtStr)
+	rT, err := jwt.ParseRefreshToken(config, ctx, tx, rtStr)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "jwt.ParseRefreshToken")
 	}
@@ -35,15 +37,16 @@ func getTokens(
 
 // Revoke the given token pair
 func revokeTokenPair(
-	conn *sql.DB,
+	ctx context.Context,
+	tx *db.SafeTX,
 	aT *jwt.AccessToken,
 	rT *jwt.RefreshToken,
 ) error {
-	err := jwt.RevokeToken(conn, aT)
+	err := jwt.RevokeToken(ctx, tx, aT)
 	if err != nil {
 		return errors.Wrap(err, "jwt.RevokeToken")
 	}
-	err = jwt.RevokeToken(conn, rT)
+	err = jwt.RevokeToken(ctx, tx, rT)
 	if err != nil {
 		return errors.Wrap(err, "jwt.RevokeToken")
 	}
@@ -53,11 +56,12 @@ func revokeTokenPair(
 // Issue new tokens for the user, invalidating the old ones
 func refreshTokens(
 	config *config.Config,
-	conn *sql.DB,
+	ctx context.Context,
+	tx *db.SafeTX,
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
-	aT, rT, err := getTokens(config, conn, r)
+	aT, rT, err := getTokens(config, ctx, tx, r)
 	if err != nil {
 		return errors.Wrap(err, "getTokens")
 	}
@@ -71,7 +75,7 @@ func refreshTokens(
 	if err != nil {
 		return errors.Wrap(err, "cookies.SetTokenCookies")
 	}
-	err = revokeTokenPair(conn, aT, rT)
+	err = revokeTokenPair(ctx, tx, aT, rT)
 	if err != nil {
 		return errors.Wrap(err, "revokeTokenPair")
 	}
@@ -97,23 +101,29 @@ func validatePassword(
 func HandleReauthenticate(
 	logger *zerolog.Logger,
 	config *config.Config,
-	conn *sql.DB,
+	conn *db.SafeConn,
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			err := validatePassword(r)
-			if err != nil {
-				w.WriteHeader(445)
-				form.ConfirmPassword("Incorrect password").Render(r.Context(), w)
-				return
-			}
-			err = refreshTokens(config, conn, w, r)
-			if err != nil {
-				logger.Error().Err(err).Msg("Failed to refresh user tokens")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			w.WriteHeader(http.StatusOK)
+			WithTransaction(w, r, logger, conn,
+				func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
+					err := validatePassword(r)
+					if err != nil {
+						tx.Rollback()
+						w.WriteHeader(445)
+						form.ConfirmPassword("Incorrect password").Render(r.Context(), w)
+						return
+					}
+					err = refreshTokens(config, ctx, tx, w, r)
+					if err != nil {
+						tx.Rollback()
+						logger.Error().Err(err).Msg("Failed to refresh user tokens")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					tx.Commit()
+					w.WriteHeader(http.StatusOK)
+				})
 		},
 	)
 }

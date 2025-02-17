@@ -13,10 +13,11 @@ import (
 )
 
 type SafeConn struct {
-	db               *sql.DB
-	readLockCount    uint32
-	globalLockStatus uint32
-	logger           *zerolog.Logger
+	db                  *sql.DB
+	readLockCount       uint32
+	globalLockStatus    uint32
+	globalLockRequested uint32
+	logger              *zerolog.Logger
 }
 
 func MakeSafe(db *sql.DB, logger *zerolog.Logger) *SafeConn {
@@ -46,7 +47,7 @@ func (conn *SafeConn) releaseGlobalLock() {
 }
 
 func (conn *SafeConn) acquireReadLock() bool {
-	if conn.globalLockStatus == 1 {
+	if conn.globalLockStatus == 1 || conn.globalLockRequested == 1 {
 		return false
 	}
 	conn.readLockCount += 1
@@ -142,6 +143,7 @@ func (stx *SafeTX) Rollback() error {
 
 // Pause blocks new transactions for a backup.
 func (conn *SafeConn) Pause() {
+	conn.globalLockRequested = 1
 	for !conn.acquireGlobalLock() {
 		// TODO: add a timeout?
 		// TODO: failed to acquire lock: print info with readLockCount
@@ -150,6 +152,7 @@ func (conn *SafeConn) Pause() {
 	// force logger to log to Stdout
 	log := conn.logger.With().Logger().Output(os.Stdout)
 	log.Info().Msg("Global database lock acquired")
+	conn.globalLockRequested = 0
 }
 
 // Resume allows transactions to proceed.

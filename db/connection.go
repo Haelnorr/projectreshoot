@@ -32,13 +32,11 @@ func (conn *SafeConn) acquireGlobalLock() bool {
 		return false
 	}
 	atomic.StoreInt32(&conn.globalLockStatus, 1)
-	fmt.Println("=====================GLOBAL LOCK ACQUIRED==================")
 	return true
 }
 
 func (conn *SafeConn) releaseGlobalLock() {
 	atomic.StoreInt32(&conn.globalLockStatus, 0)
-	fmt.Println("=====================GLOBAL LOCK RELEASED==================")
 }
 
 func (conn *SafeConn) acquireReadLock() bool {
@@ -46,13 +44,11 @@ func (conn *SafeConn) acquireReadLock() bool {
 		return false
 	}
 	atomic.AddInt32(&conn.readLockCount, 1)
-	fmt.Println("=====================READ LOCK ACQUIRED==================")
 	return true
 }
 
 func (conn *SafeConn) releaseReadLock() {
 	atomic.AddInt32(&conn.readLockCount, -1)
-	fmt.Println("=====================READ LOCK RELEASED==================")
 }
 
 // Starts a new transaction based on the current context. Will cancel if
@@ -65,7 +61,6 @@ func (conn *SafeConn) Begin(ctx context.Context) (*SafeTX, error) {
 	go func() {
 		select {
 		case <-lockCtx.Done():
-			fmt.Println("=====================READ LOCK ABANDONED==================")
 			return
 		default:
 			if conn.acquireReadLock() {
@@ -151,10 +146,8 @@ func (conn *SafeConn) Resume() {
 
 // Close the database connection
 func (conn *SafeConn) Close() error {
-	fmt.Println("=====================DB LOCKING FOR SHUTDOWN==================")
 	conn.acquireGlobalLock()
 	defer conn.releaseGlobalLock()
-	fmt.Println("=====================DB LOCKED FOR SHUTDOWN==================")
 	return conn.db.Close()
 }
 

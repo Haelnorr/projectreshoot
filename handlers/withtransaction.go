@@ -11,7 +11,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// A helper function to create a transaction with a cancellable context.
 func WithTransaction(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -24,8 +23,7 @@ func WithTransaction(
 		r *http.Request,
 	),
 ) {
-	// Create a cancellable context from the request context
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 
 	// Start the transaction
@@ -41,6 +39,5 @@ func WithTransaction(
 		return
 	}
 
-	// Pass the context and transaction to the handler
 	handler(ctx, tx, w, r)
 }

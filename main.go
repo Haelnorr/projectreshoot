@@ -120,7 +120,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		return errors.Wrap(err, "getStaticFiles")
 	}
 
-	srv := server.NewServer(config, logger, conn, &staticFS)
+	srv := server.NewServer(config, logger, conn, &staticFS, &maint)
 	httpServer := &http.Server{
 		Addr:              net.JoinHostPort(config.Host, config.Port),
 		Handler:           srv,

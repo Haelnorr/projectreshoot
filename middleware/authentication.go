@@ -3,13 +3,13 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"projectreshoot/config"
 	"projectreshoot/contexts"
 	"projectreshoot/cookies"
 	"projectreshoot/db"
-	"projectreshoot/handlers"
 	"projectreshoot/jwt"
 
 	"github.com/pkg/errors"
@@ -98,6 +98,7 @@ func Authentication(
 	config *config.Config,
 	conn *db.SafeConn,
 	next http.Handler,
+	maint *uint32,
 ) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/static/css/output.css" ||
@@ -105,26 +106,37 @@ func Authentication(
 			next.ServeHTTP(w, r)
 			return
 		}
-		handlers.WithTransaction(w, r, logger, conn,
-			func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
-				user, err := getAuthenticatedUser(config, ctx, tx, w, r)
-				if err != nil {
-					tx.Rollback()
-					// User auth failed, delete the cookies to avoid repeat requests
-					cookies.DeleteCookie(w, "access", "/")
-					cookies.DeleteCookie(w, "refresh", "/")
-					logger.Debug().
-						Str("remote_addr", r.RemoteAddr).
-						Err(err).
-						Msg("Failed to authenticate user")
-					next.ServeHTTP(w, r)
-					return
-				}
-				tx.Commit()
-				uctx := contexts.SetUser(r.Context(), user)
-				newReq := r.WithContext(uctx)
-				next.ServeHTTP(w, newReq)
-			},
-		)
+		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+		defer cancel()
+		if atomic.LoadUint32(maint) == 1 {
+			cancel()
+		}
+
+		// Start the transaction
+		tx, err := conn.Begin(ctx)
+		if err != nil {
+			// Failed to start transaction, warn the user they cant login right now
+			logger.Warn().Err(err).Msg("Request failed to start a transaction")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			next.ServeHTTP(w, r)
+			return
+		}
+		user, err := getAuthenticatedUser(config, ctx, tx, w, r)
+		if err != nil {
+			tx.Rollback()
+			// User auth failed, delete the cookies to avoid repeat requests
+			cookies.DeleteCookie(w, "access", "/")
+			cookies.DeleteCookie(w, "refresh", "/")
+			logger.Debug().
+				Str("remote_addr", r.RemoteAddr).
+				Err(err).
+				Msg("Failed to authenticate user")
+			next.ServeHTTP(w, r)
+			return
+		}
+		tx.Commit()
+		uctx := contexts.SetUser(r.Context(), user)
+		newReq := r.WithContext(uctx)
+		next.ServeHTTP(w, newReq)
 	})
 }

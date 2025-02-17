@@ -33,10 +33,7 @@ type Config struct {
 
 // Load the application configuration and get a pointer to the Config object
 func GetConfig(args map[string]string) (*Config, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println(err)
-	}
+	godotenv.Load(".env")
 	var (
 		host      string
 		port      string

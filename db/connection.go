@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // Wraps the database handle, providing a mutex to safely manage transactions
@@ -123,7 +123,7 @@ func (conn *SafeConn) Close() error {
 // Returns a database connection handle for the DB
 func OldConnectToDatabase(dbName string) (*sql.DB, error) {
 	file := fmt.Sprintf("file:%s.db", dbName)
-	db, err := sql.Open("sqlite3", file)
+	db, err := sql.Open("sqlite", file)
 	if err != nil {
 		return nil, errors.Wrap(err, "sql.Open")
 	}
@@ -134,7 +134,7 @@ func OldConnectToDatabase(dbName string) (*sql.DB, error) {
 // Returns a database connection handle for the DB
 func ConnectToDatabase(dbName string) (*SafeConn, error) {
 	file := fmt.Sprintf("file:%s.db", dbName)
-	db, err := sql.Open("sqlite3", file)
+	db, err := sql.Open("sqlite", file)
 	if err != nil {
 		return nil, errors.Wrap(err, "sql.Open")
 	}

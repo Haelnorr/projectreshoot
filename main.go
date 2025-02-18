@@ -67,16 +67,14 @@ func handleMaintSignals(
 			case syscall.SIGUSR1:
 				if atomic.LoadUint32(&maint) != 1 {
 					atomic.StoreUint32(&maint, 1)
-					log := logger.With().Logger().Output(os.Stdout)
-					log.Info().Msg("Signal received: Starting maintenance")
-					log.Info().Msg("Attempting to acquire database lock")
+					logger.Info().Msg("Signal received: Starting maintenance")
+					logger.Info().Msg("Attempting to acquire database lock")
 					conn.Pause(config.DBLockTimeout * time.Second)
 				}
 			case syscall.SIGUSR2:
 				if atomic.LoadUint32(&maint) != 0 {
-					log := logger.With().Logger().Output(os.Stdout)
-					log.Info().Msg("Signal received: Maintenance over")
-					log.Info().Msg("Releasing database lock")
+					logger.Info().Msg("Signal received: Maintenance over")
+					logger.Info().Msg("Releasing database lock")
 					conn.Resume()
 					atomic.StoreUint32(&maint, 0)
 				}

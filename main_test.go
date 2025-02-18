@@ -1,12 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func Test_main(t *testing.T) {
@@ -14,13 +19,60 @@ func Test_main(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 	args := map[string]string{}
-	go run(ctx, os.Stdout, args)
+	var stdout bytes.Buffer
+	go run(ctx, &stdout, args)
 
-	// wait for the server to become available
 	waitForReady(ctx, 10*time.Second, "http://localhost:3333/healthz")
 
-	// do tests
-	fmt.Println("Tests starting")
+	t.Run("SIGUSR1 puts database into global lock", func(t *testing.T) {
+		done := make(chan bool)
+		go func() {
+			expected := "Global database lock acquired"
+			for {
+				if strings.Contains(stdout.String(), expected) {
+					done <- true
+					return
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
+		}()
+
+		proc, err := os.FindProcess(os.Getpid())
+		require.NoError(t, err)
+		proc.Signal(syscall.SIGUSR1)
+
+		select {
+		case <-done:
+			t.Log("found")
+		case <-time.After(250 * time.Millisecond):
+			t.Errorf("Not found")
+		}
+	})
+
+	t.Run("SIGUSR2 releases database global lock", func(t *testing.T) {
+		done := make(chan bool)
+		go func() {
+			expected := "Global database lock released"
+			for {
+				if strings.Contains(stdout.String(), expected) {
+					done <- true
+					return
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
+		}()
+
+		proc, err := os.FindProcess(os.Getpid())
+		require.NoError(t, err)
+		proc.Signal(syscall.SIGUSR2)
+
+		select {
+		case <-done:
+			t.Log("found")
+		case <-time.After(250 * time.Millisecond):
+			t.Errorf("Not found")
+		}
+	})
 }
 
 func waitForReady(

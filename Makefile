@@ -23,6 +23,8 @@ test:
 	go mod tidy && \
    	templ generate && \
 	go generate && \
+	go test .
+	go test ./db
 	go test ./middleware
 
 clean:

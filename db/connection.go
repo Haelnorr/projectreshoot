@@ -144,21 +144,19 @@ func (stx *SafeTX) Rollback() error {
 
 // Acquire a global lock, preventing all transactions
 func (conn *SafeConn) Pause(timeoutAfter time.Duration) {
-	// force logger to log to Stdout so the signalling process can check
-	log := conn.logger.With().Logger().Output(os.Stdout)
-	log.Info().Msg("Attempting to acquire global database lock")
+	conn.logger.Info().Msg("Attempting to acquire global database lock")
 	conn.globalLockRequested = 1
 	defer func() { conn.globalLockRequested = 0 }()
 	timeout := time.After(timeoutAfter)
 	attempt := 0
 	for {
 		if conn.acquireGlobalLock() {
-			log.Info().Msg("Global database lock acquired")
+			conn.logger.Info().Msg("Global database lock acquired")
 			return
 		}
 		select {
 		case <-timeout:
-			log.Info().Msg("Timeout: Global database lock abandoned")
+			conn.logger.Info().Msg("Timeout: Global database lock abandoned")
 			return
 		case <-time.After(100 * time.Millisecond):
 			attempt++
@@ -169,9 +167,7 @@ func (conn *SafeConn) Pause(timeoutAfter time.Duration) {
 // Release the global lock
 func (conn *SafeConn) Resume() {
 	conn.releaseGlobalLock()
-	// force logger to log to Stdout
-	log := conn.logger.With().Logger().Output(os.Stdout)
-	log.Info().Msg("Global database lock released")
+	conn.logger.Info().Msg("Global database lock released")
 }
 
 // Close the database connection

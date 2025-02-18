@@ -20,9 +20,12 @@ func Test_main(t *testing.T) {
 	t.Cleanup(cancel)
 	args := map[string]string{}
 	var stdout bytes.Buffer
+	os.Setenv("SECRET_KEY", ".")
+	os.Setenv("HOST", "127.0.0.1")
+	os.Setenv("PORT", "3232")
 	go run(ctx, &stdout, args)
 
-	waitForReady(ctx, 10*time.Second, "http://localhost:3333/healthz")
+	waitForReady(ctx, 10*time.Second, "http://127.0.0.1:3232/healthz")
 
 	t.Run("SIGUSR1 puts database into global lock", func(t *testing.T) {
 		done := make(chan bool)

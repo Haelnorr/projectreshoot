@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"projectreshoot/config"
 	"projectreshoot/contexts"
@@ -105,25 +106,32 @@ func HandleReauthenticate(
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			WithTransaction(w, r, logger, conn,
-				func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
-					err := validatePassword(r)
-					if err != nil {
-						tx.Rollback()
-						w.WriteHeader(445)
-						form.ConfirmPassword("Incorrect password").Render(r.Context(), w)
-						return
-					}
-					err = refreshTokens(config, ctx, tx, w, r)
-					if err != nil {
-						tx.Rollback()
-						logger.Error().Err(err).Msg("Failed to refresh user tokens")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					tx.Commit()
-					w.WriteHeader(http.StatusOK)
-				})
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
+
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Failed to refresh user tokens")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			err = validatePassword(r)
+			if err != nil {
+				tx.Rollback()
+				w.WriteHeader(445)
+				form.ConfirmPassword("Incorrect password").Render(r.Context(), w)
+				return
+			}
+			err = refreshTokens(config, ctx, tx, w, r)
+			if err != nil {
+				tx.Rollback()
+				logger.Error().Err(err).Msg("Failed to refresh user tokens")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			tx.Commit()
+			w.WriteHeader(http.StatusOK)
 		},
 	)
 }

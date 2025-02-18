@@ -1,9 +1,9 @@
 package popup
 
-templ ErrorPopup() {
+templ Error503Popup() {
 	<div
 		x-cloak
-		x-show="showError"
+		x-show="showError503"
 		class="absolute w-82 left-0 right-0 mt-20 mr-5 ml-auto"
 		x-transition:enter="transform translate-x-[100%] opacity-0 duration-200"
 		x-transition:enter-start="opacity-0 translate-x-[100%]"
@@ -34,7 +34,7 @@ templ ErrorPopup() {
 							clip-rule="evenodd"
 						></path>
 					</svg>
-					<strong class="block font-medium">Something went wrong </strong>
+					<strong class="block font-medium">Service Unavailable</strong>
 				</div>
 				<div class="flex">
 					<svg
@@ -44,7 +44,7 @@ templ ErrorPopup() {
 						stroke-width="1.5"
 						stroke="currentColor"
 						class="size-6 text-subtext0 hover:cursor-pointer"
-						@click="showError=false"
+						@click="showError503=false"
 					>
 						<path
 							stroke-linecap="round"
@@ -55,8 +55,8 @@ templ ErrorPopup() {
 				</div>
 			</div>
 			<p class="mt-2 text-sm text-red">
-				An error occured on the server. Please try again later,
-				or contact an administrator
+				The service is currently available. It could be down for maintenance.
+				Please try again later.
 			</p>
 		</div>
 	</div>

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"projectreshoot/config"
 	"projectreshoot/cookies"
@@ -50,36 +51,42 @@ func HandleRegisterRequest(
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			WithTransaction(w, r, logger, conn,
-				func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
-					r.ParseForm()
-					user, err := validateRegistration(ctx, tx, r)
-					if err != nil {
-						tx.Rollback()
-						if err.Error() != "Username is taken" &&
-							err.Error() != "Passwords do not match" &&
-							err.Error() != "Password exceeds maximum length of 72 bytes" {
-							logger.Warn().Caller().Err(err).Msg("Registration request failed")
-							w.WriteHeader(http.StatusInternalServerError)
-						} else {
-							form.RegisterForm(err.Error()).Render(r.Context(), w)
-						}
-						return
-					}
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
 
-					rememberMe := checkRememberMe(r)
-					err = cookies.SetTokenCookies(w, r, config, user, true, rememberMe)
-					if err != nil {
-						tx.Rollback()
-						w.WriteHeader(http.StatusInternalServerError)
-						logger.Warn().Caller().Err(err).Msg("Failed to set token cookies")
-						return
-					}
-					tx.Commit()
-					pageFrom := cookies.CheckPageFrom(w, r)
-					w.Header().Set("HX-Redirect", pageFrom)
-				},
-			)
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Failed to set token cookies")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			r.ParseForm()
+			user, err := validateRegistration(ctx, tx, r)
+			if err != nil {
+				tx.Rollback()
+				if err.Error() != "Username is taken" &&
+					err.Error() != "Passwords do not match" &&
+					err.Error() != "Password exceeds maximum length of 72 bytes" {
+					logger.Warn().Caller().Err(err).Msg("Registration request failed")
+					w.WriteHeader(http.StatusInternalServerError)
+				} else {
+					form.RegisterForm(err.Error()).Render(r.Context(), w)
+				}
+				return
+			}
+
+			rememberMe := checkRememberMe(r)
+			err = cookies.SetTokenCookies(w, r, config, user, true, rememberMe)
+			if err != nil {
+				tx.Rollback()
+				w.WriteHeader(http.StatusInternalServerError)
+				logger.Warn().Caller().Err(err).Msg("Failed to set token cookies")
+				return
+			}
+			tx.Commit()
+			pageFrom := cookies.CheckPageFrom(w, r)
+			w.Header().Set("HX-Redirect", pageFrom)
 		},
 	)
 }

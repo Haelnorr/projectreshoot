@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"projectreshoot/config"
 	"projectreshoot/cookies"
@@ -86,20 +87,27 @@ func HandleLogout(
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			WithTransaction(w, r, logger, conn,
-				func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
-					err := revokeTokens(config, ctx, tx, r)
-					if err != nil {
-						tx.Rollback()
-						logger.Error().Err(err).Msg("Error occured on user logout")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					tx.Commit()
-					cookies.DeleteCookie(w, "access", "/")
-					cookies.DeleteCookie(w, "refresh", "/")
-					w.Header().Set("HX-Redirect", "/login")
-				})
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
+
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Error occured on user logout")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			err = revokeTokens(config, ctx, tx, r)
+			if err != nil {
+				tx.Rollback()
+				logger.Error().Err(err).Msg("Error occured on user logout")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			tx.Commit()
+			cookies.DeleteCookie(w, "access", "/")
+			cookies.DeleteCookie(w, "refresh", "/")
+			w.Header().Set("HX-Redirect", "/login")
 		},
 	)
 }

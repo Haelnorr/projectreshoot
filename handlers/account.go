@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"projectreshoot/contexts"
 	"projectreshoot/cookies"
@@ -47,35 +48,41 @@ func HandleChangeUsername(
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			WithTransaction(w, r, logger, conn,
-				func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
-					r.ParseForm()
-					newUsername := r.FormValue("username")
-					unique, err := db.CheckUsernameUnique(ctx, tx, newUsername)
-					if err != nil {
-						tx.Rollback()
-						logger.Error().Err(err).Msg("Error updating username")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					if !unique {
-						tx.Rollback()
-						account.ChangeUsername("Username is taken", newUsername).
-							Render(r.Context(), w)
-						return
-					}
-					user := contexts.GetUser(r.Context())
-					err = user.ChangeUsername(ctx, tx, newUsername)
-					if err != nil {
-						tx.Rollback()
-						logger.Error().Err(err).Msg("Error updating username")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					tx.Commit()
-					w.Header().Set("HX-Refresh", "true")
-				},
-			)
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
+
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Error updating username")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			r.ParseForm()
+			newUsername := r.FormValue("username")
+			unique, err := db.CheckUsernameUnique(ctx, tx, newUsername)
+			if err != nil {
+				tx.Rollback()
+				logger.Error().Err(err).Msg("Error updating username")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if !unique {
+				tx.Rollback()
+				account.ChangeUsername("Username is taken", newUsername).
+					Render(r.Context(), w)
+				return
+			}
+			user := contexts.GetUser(r.Context())
+			err = user.ChangeUsername(ctx, tx, newUsername)
+			if err != nil {
+				tx.Rollback()
+				logger.Error().Err(err).Msg("Error updating username")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			tx.Commit()
+			w.Header().Set("HX-Refresh", "true")
 		},
 	)
 }
@@ -87,29 +94,35 @@ func HandleChangeBio(
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			WithTransaction(w, r, logger, conn,
-				func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
-					r.ParseForm()
-					newBio := r.FormValue("bio")
-					leng := len([]rune(newBio))
-					if leng > 128 {
-						tx.Rollback()
-						account.ChangeBio("Bio limited to 128 characters", newBio).
-							Render(r.Context(), w)
-						return
-					}
-					user := contexts.GetUser(r.Context())
-					err := user.ChangeBio(ctx, tx, newBio)
-					if err != nil {
-						tx.Rollback()
-						logger.Error().Err(err).Msg("Error updating bio")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					tx.Commit()
-					w.Header().Set("HX-Refresh", "true")
-				},
-			)
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
+
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Error updating bio")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			r.ParseForm()
+			newBio := r.FormValue("bio")
+			leng := len([]rune(newBio))
+			if leng > 128 {
+				tx.Rollback()
+				account.ChangeBio("Bio limited to 128 characters", newBio).
+					Render(r.Context(), w)
+				return
+			}
+			user := contexts.GetUser(r.Context())
+			err = user.ChangeBio(ctx, tx, newBio)
+			if err != nil {
+				tx.Rollback()
+				logger.Error().Err(err).Msg("Error updating bio")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			tx.Commit()
+			w.Header().Set("HX-Refresh", "true")
 		},
 	)
 }
@@ -137,26 +150,32 @@ func HandleChangePassword(
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			WithTransaction(w, r, logger, conn,
-				func(ctx context.Context, tx *db.SafeTX, w http.ResponseWriter, r *http.Request) {
-					newPass, err := validateChangePassword(ctx, tx, r)
-					if err != nil {
-						tx.Rollback()
-						account.ChangePassword(err.Error()).Render(r.Context(), w)
-						return
-					}
-					user := contexts.GetUser(r.Context())
-					err = user.SetPassword(ctx, tx, newPass)
-					if err != nil {
-						tx.Rollback()
-						logger.Error().Err(err).Msg("Error updating password")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					tx.Commit()
-					w.Header().Set("HX-Refresh", "true")
-				},
-			)
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
+
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Error updating password")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			newPass, err := validateChangePassword(ctx, tx, r)
+			if err != nil {
+				tx.Rollback()
+				account.ChangePassword(err.Error()).Render(r.Context(), w)
+				return
+			}
+			user := contexts.GetUser(r.Context())
+			err = user.SetPassword(ctx, tx, newPass)
+			if err != nil {
+				tx.Rollback()
+				logger.Error().Err(err).Msg("Error updating password")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			tx.Commit()
+			w.Header().Set("HX-Refresh", "true")
 		},
 	)
 }

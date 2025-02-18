@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"projectreshoot/config"
 	"projectreshoot/cookies"

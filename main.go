@@ -48,14 +48,17 @@ func getStaticFiles(logger *zerolog.Logger) (http.FileSystem, error) {
 
 var maint uint32 // atomic: 1 if in maintenance mode
 
+// Handle SIGUSR1 and SIGUSR2 syscalls to toggle maintenance mode
 func handleMaintSignals(
 	conn *db.SafeConn,
 	srv *http.Server,
 	logger *zerolog.Logger,
 	config *config.Config,
 ) {
+	logger.Debug().Msg("Starting signal listener")
 	ch := make(chan os.Signal, 1)
 	srv.RegisterOnShutdown(func() {
+		logger.Debug().Msg("Shutting down signal listener")
 		close(ch)
 	})
 	go func() {
@@ -117,17 +120,21 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		return errors.Wrap(err, "logging.GetLogger")
 	}
 
+	logger.Debug().Msg("Config loaded and logger started")
+	logger.Debug().Msg("Connecting to database")
 	conn, err := db.ConnectToDatabase(config.DBName, logger)
 	if err != nil {
 		return errors.Wrap(err, "db.ConnectToDatabase")
 	}
 	defer conn.Close()
 
+	logger.Debug().Msg("Getting static files")
 	staticFS, err := getStaticFiles(logger)
 	if err != nil {
 		return errors.Wrap(err, "getStaticFiles")
 	}
 
+	logger.Debug().Msg("Setting up HTTP server")
 	srv := server.NewServer(config, logger, conn, &staticFS, &maint)
 	httpServer := &http.Server{
 		Addr:              net.JoinHostPort(config.Host, config.Port),
@@ -139,6 +146,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 
 	// Runs function for testing in dev if --test flag true
 	if args["test"] == "true" {
+		logger.Debug().Msg("Running tester function")
 		test(config, logger, conn, httpServer)
 		return nil
 	}
@@ -147,6 +155,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	handleMaintSignals(conn, httpServer, logger, config)
 
 	// Runs the http server
+	logger.Debug().Msg("Starting up the HTTP server")
 	go func() {
 		logger.Info().Str("address", httpServer.Addr).Msg("Listening for requests")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {

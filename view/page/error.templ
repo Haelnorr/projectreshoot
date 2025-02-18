@@ -1,11 +1,12 @@
 package page
 
 import "projectreshoot/view/layout"
+import "strconv"
 
 // Page template for Error pages. Error code should be a HTTP status code as
 // a string, and err should be the corresponding response title.
 // Message is a custom error message displayed below the code and error.
-templ Error(code string, err string, message string) {
+templ Error(code int, err string, message string) {
 	@layout.Global() {
 		<div
 			class="grid mt-24 left-0 right-0 top-0 bottom-0 
@@ -14,7 +15,7 @@ templ Error(code string, err string, message string) {
 			<div class="text-center">
 				<h1
 					class="text-9xl text-text"
-				>{ code }</h1>
+				>{ strconv.Itoa(code) }</h1>
 				<p
 					class="text-2xl font-bold tracking-tight text-subtext1
                     sm:text-4xl"

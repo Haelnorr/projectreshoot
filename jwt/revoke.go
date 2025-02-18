@@ -27,7 +27,6 @@ func CheckTokenNotRevoked(ctx context.Context, tx *db.SafeTX, t Token) (bool, er
 	if err != nil {
 		return false, errors.Wrap(err, "tx.Query")
 	}
-	// NOTE: rows.Close()
 	defer rows.Close()
 	revoked := rows.Next()
 	return !revoked, nil

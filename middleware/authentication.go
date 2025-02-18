@@ -10,6 +10,7 @@ import (
 	"projectreshoot/contexts"
 	"projectreshoot/cookies"
 	"projectreshoot/db"
+	"projectreshoot/handlers"
 	"projectreshoot/jwt"
 
 	"github.com/pkg/errors"
@@ -106,7 +107,7 @@ func Authentication(
 			next.ServeHTTP(w, r)
 			return
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 		defer cancel()
 		if atomic.LoadUint32(maint) == 1 {
 			cancel()
@@ -115,10 +116,10 @@ func Authentication(
 		// Start the transaction
 		tx, err := conn.Begin(ctx)
 		if err != nil {
-			// Failed to start transaction, send 503 code to client
-			logger.Warn().Err(err).Msg("Skipping Auth - unable to start a transaction")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			next.ServeHTTP(w, r)
+			// Failed to start transaction, skip auth
+			logger.Warn().Err(err).
+				Msg("Skipping Auth - unable to start a transaction")
+			handlers.ErrorPage(http.StatusServiceUnavailable, w, r)
 			return
 		}
 		user, err := getAuthenticatedUser(config, ctx, tx, w, r)

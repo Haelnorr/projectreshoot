@@ -41,11 +41,12 @@ templ Global() {
 			<script src="https://unpkg.com/alpinejs" defer></script>
 			<script>
                 // uncomment this line to enable logging of htmx events
-                // htmx.logAll();
+                 htmx.logAll();
             </script>
 			<script>
                 const bodyData = {
-                    showError: false,
+                    showError500: false,
+                    showError503: false,
                     showConfirmPasswordModal: false,
                     handleHtmxBeforeOnLoad(event) {
                         const requestPath = event.detail.pathInfo.requestPath;
@@ -65,8 +66,13 @@ templ Global() {
                   
                         // internal server error 
                         if (errorCode.includes('Code 500')) {
-                            this.showError = true;
-                            setTimeout(() => this.showError = false, 6000);
+                            this.showError500 = true;
+                            setTimeout(() => this.showError500 = false, 6000);
+                        }
+                        // service not available error
+                        if (errorCode.includes('Code 503')) {
+                            this.showError503 = true;
+                            setTimeout(() => this.showError503 = false, 6000);
                         }
                   
                         // user is authorized but needs to refresh their login
@@ -83,7 +89,8 @@ templ Global() {
 			x-on:htmx:error="handleHtmxError($event)"
 			x-on:htmx:before-on-load="handleHtmxBeforeOnLoad($event)"
 		>
-			@popup.ErrorPopup()
+			@popup.Error500Popup()
+			@popup.Error503Popup()
 			@popup.ConfirmPasswordModal()
 			<div
 				id="main-content"

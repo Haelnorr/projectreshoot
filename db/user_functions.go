@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -8,17 +9,22 @@ import (
 )
 
 // Creates a new user in the database and returns a pointer
-func CreateNewUser(conn *sql.DB, username string, password string) (*User, error) {
+func CreateNewUser(
+	ctx context.Context,
+	tx *SafeTX,
+	username string,
+	password string,
+) (*User, error) {
 	query := `INSERT INTO users (username) VALUES (?)`
-	_, err := conn.Exec(query, username)
+	_, err := tx.Exec(ctx, query, username)
 	if err != nil {
-		return nil, errors.Wrap(err, "conn.Exec")
+		return nil, errors.Wrap(err, "tx.Exec")
 	}
-	user, err := GetUserFromUsername(conn, username)
+	user, err := GetUserFromUsername(ctx, tx, username)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetUserFromUsername")
 	}
-	err = user.SetPassword(conn, password)
+	err = user.SetPassword(ctx, tx, password)
 	if err != nil {
 		return nil, errors.Wrap(err, "user.SetPassword")
 	}
@@ -26,7 +32,12 @@ func CreateNewUser(conn *sql.DB, username string, password string) (*User, error
 }
 
 // Fetches data from the users table using "WHERE column = 'value'"
-func fetchUserData(conn *sql.DB, column string, value interface{}) (*sql.Rows, error) {
+func fetchUserData(
+	ctx context.Context,
+	tx *SafeTX,
+	column string,
+	value interface{},
+) (*sql.Rows, error) {
 	query := fmt.Sprintf(
 		`SELECT 
             id,
@@ -38,9 +49,9 @@ func fetchUserData(conn *sql.DB, column string, value interface{}) (*sql.Rows, e
 	    WHERE %s = ? COLLATE NOCASE LIMIT 1`,
 		column,
 	)
-	rows, err := conn.Query(query, value)
+	rows, err := tx.Query(ctx, query, value)
 	if err != nil {
-		return nil, errors.Wrap(err, "conn.Query")
+		return nil, errors.Wrap(err, "tx.Query")
 	}
 	return rows, nil
 }
@@ -66,8 +77,8 @@ func scanUserRow(user *User, rows *sql.Rows) error {
 
 // Queries the database for a user matching the given username.
 // Query is case insensitive
-func GetUserFromUsername(conn *sql.DB, username string) (*User, error) {
-	rows, err := fetchUserData(conn, "username", username)
+func GetUserFromUsername(ctx context.Context, tx *SafeTX, username string) (*User, error) {
+	rows, err := fetchUserData(ctx, tx, "username", username)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetchUserData")
 	}
@@ -81,8 +92,8 @@ func GetUserFromUsername(conn *sql.DB, username string) (*User, error) {
 }
 
 // Queries the database for a user matching the given ID.
-func GetUserFromID(conn *sql.DB, id int) (*User, error) {
-	rows, err := fetchUserData(conn, "id", id)
+func GetUserFromID(ctx context.Context, tx *SafeTX, id int) (*User, error) {
+	rows, err := fetchUserData(ctx, tx, "id", id)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetchUserData")
 	}
@@ -96,11 +107,11 @@ func GetUserFromID(conn *sql.DB, id int) (*User, error) {
 }
 
 // Checks if the given username is unique. Returns true if not taken
-func CheckUsernameUnique(conn *sql.DB, username string) (bool, error) {
+func CheckUsernameUnique(ctx context.Context, tx *SafeTX, username string) (bool, error) {
 	query := `SELECT 1 FROM users WHERE username = ? COLLATE NOCASE LIMIT 1`
-	rows, err := conn.Query(query, username)
+	rows, err := tx.Query(ctx, query, username)
 	if err != nil {
-		return false, errors.Wrap(err, "conn.Query")
+		return false, errors.Wrap(err, "tx.Query")
 	}
 	defer rows.Close()
 	taken := rows.Next()

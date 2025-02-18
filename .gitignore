@@ -2,6 +2,7 @@
 query.sql
 *.db
 .logs/
+server.log
 tmp/
 projectreshoot
 static/css/output.css

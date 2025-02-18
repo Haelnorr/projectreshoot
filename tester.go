@@ -1,10 +1,10 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 
 	"projectreshoot/config"
+	"projectreshoot/db"
 
 	"github.com/rs/zerolog"
 )
@@ -18,7 +18,7 @@ import (
 func test(
 	config *config.Config,
 	logger *zerolog.Logger,
-	conn *sql.DB,
+	conn *db.SafeConn,
 	srv *http.Server,
 ) {
 }

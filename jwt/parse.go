@@ -1,11 +1,12 @@
 package jwt
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"time"
 
 	"projectreshoot/config"
+	"projectreshoot/db"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -17,7 +18,8 @@ import (
 // has the correct scope.
 func ParseAccessToken(
 	config *config.Config,
-	conn *sql.DB,
+	ctx context.Context,
+	tx *db.SafeTX,
 	tokenString string,
 ) (*AccessToken, error) {
 	if tokenString == "" {
@@ -74,7 +76,7 @@ func ParseAccessToken(
 		Scope: scope,
 	}
 
-	valid, err := CheckTokenNotRevoked(conn, token)
+	valid, err := CheckTokenNotRevoked(ctx, tx, token)
 	if err != nil {
 		return nil, errors.Wrap(err, "CheckTokenNotRevoked")
 	}
@@ -89,7 +91,8 @@ func ParseAccessToken(
 // has the correct scope.
 func ParseRefreshToken(
 	config *config.Config,
-	conn *sql.DB,
+	ctx context.Context,
+	tx *db.SafeTX,
 	tokenString string,
 ) (*RefreshToken, error) {
 	if tokenString == "" {
@@ -141,7 +144,7 @@ func ParseRefreshToken(
 		Scope: scope,
 	}
 
-	valid, err := CheckTokenNotRevoked(conn, token)
+	valid, err := CheckTokenNotRevoked(ctx, tx, token)
 	if err != nil {
 		return nil, errors.Wrap(err, "CheckTokenNotRevoked")
 	}

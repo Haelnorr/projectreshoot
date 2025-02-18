@@ -3,33 +3,38 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
+	"projectreshoot/db"
 	"projectreshoot/tests"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestActionReauthRequired(t *testing.T) {
-	// Basic setup
-	cfg, err := tests.TestConfig()
-	require.NoError(t, err)
+func TestReauthRequired(t *testing.T) {
 	logger := tests.NilLogger()
+	// Basic setup
 	conn, err := tests.SetupTestDB()
 	require.NoError(t, err)
-	require.NotNil(t, conn)
-	defer tests.DeleteTestDB()
+	sconn := db.MakeSafe(conn, logger)
+	defer sconn.Close()
+
+	cfg, err := tests.TestConfig()
+	require.NoError(t, err)
 
 	// Handler to check outcome of Authentication middleware
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	var maint uint32
+	atomic.StoreUint32(&maint, 0)
 	// Add the middleware and create the server
 	reauthRequiredHandler := RequiresFresh(testHandler)
 	loginRequiredHandler := RequiresLogin(reauthRequiredHandler)
-	authHandler := Authentication(logger, cfg, conn, loginRequiredHandler)
+	authHandler := Authentication(logger, cfg, sconn, loginRequiredHandler, &maint)
 	server := httptest.NewServer(authHandler)
 	defer server.Close()
 

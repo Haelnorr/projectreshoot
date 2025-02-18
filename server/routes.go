@@ -1,10 +1,10 @@
 package server
 
 import (
-	"database/sql"
 	"net/http"
 
 	"projectreshoot/config"
+	"projectreshoot/db"
 	"projectreshoot/handlers"
 	"projectreshoot/middleware"
 	"projectreshoot/view/page"
@@ -17,7 +17,7 @@ func addRoutes(
 	mux *http.ServeMux,
 	logger *zerolog.Logger,
 	config *config.Config,
-	conn *sql.DB,
+	conn *db.SafeConn,
 	staticFS *http.FileSystem,
 ) {
 	// Health check

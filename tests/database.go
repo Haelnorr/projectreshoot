@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func findSQLFile(filename string) (string, error) {
@@ -31,9 +31,8 @@ func findSQLFile(filename string) (string, error) {
 }
 
 // SetupTestDB initializes a test SQLite database with mock data
-// Make sure to call DeleteTestDB when finished to cleanup
 func SetupTestDB() (*sql.DB, error) {
-	conn, err := sql.Open("sqlite3", "file:.projectreshoot-test-database.db")
+	conn, err := sql.Open("sqlite", "file::memory:?cache=shared")
 	if err != nil {
 		return nil, errors.Wrap(err, "sql.Open")
 	}
@@ -51,7 +50,7 @@ func SetupTestDB() (*sql.DB, error) {
 
 	_, err = conn.Exec(schemaSQL)
 	if err != nil {
-		return nil, errors.Wrap(err, "conn.Exec")
+		return nil, errors.Wrap(err, "tx.Exec")
 	}
 	// Load the test data
 	dataPath, err := findSQLFile("testdata.sql")
@@ -66,20 +65,7 @@ func SetupTestDB() (*sql.DB, error) {
 
 	_, err = conn.Exec(dataSQL)
 	if err != nil {
-		return nil, errors.Wrap(err, "conn.Exec")
+		return nil, errors.Wrap(err, "tx.Exec")
 	}
 	return conn, nil
-}
-
-// Deletes the test database from disk
-func DeleteTestDB() error {
-	fileName := ".projectreshoot-test-database.db"
-
-	// Attempt to remove the file
-	err := os.Remove(fileName)
-	if err != nil {
-		return errors.Wrap(err, "os.Remove")
-	}
-
-	return nil
 }

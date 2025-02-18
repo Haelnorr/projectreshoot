@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -75,7 +76,7 @@ func (conn *SafeConn) Begin(ctx context.Context) (*SafeTX, error) {
 			return
 		default:
 			if conn.acquireReadLock() {
-				close(lockAcquired) // Lock acquired
+				close(lockAcquired)
 			}
 		}
 	}()
@@ -118,7 +119,7 @@ func (stx *SafeTX) Exec(
 	return stx.tx.ExecContext(ctx, query, args...)
 }
 
-// Commit commits the transaction and releases the lock.
+// Commit the current transaction and release the read lock
 func (stx *SafeTX) Commit() error {
 	if stx.tx == nil {
 		return errors.New("Cannot commit without a transaction")
@@ -130,7 +131,7 @@ func (stx *SafeTX) Commit() error {
 	return err
 }
 
-// Rollback aborts the transaction.
+// Abort the current transaction, releasing the read lock
 func (stx *SafeTX) Rollback() error {
 	if stx.tx == nil {
 		return errors.New("Cannot rollback without a transaction")
@@ -141,21 +142,31 @@ func (stx *SafeTX) Rollback() error {
 	return err
 }
 
-// Pause blocks new transactions for a backup.
-func (conn *SafeConn) Pause() {
-	conn.globalLockRequested = 1
-	for !conn.acquireGlobalLock() {
-		// TODO: add a timeout?
-		// TODO: failed to acquire lock: print info with readLockCount
-		// every second, or update it dynamically
-	}
-	// force logger to log to Stdout
+// Acquire a global lock, preventing all transactions
+func (conn *SafeConn) Pause(timeoutAfter time.Duration) {
+	// force logger to log to Stdout so the signalling process can check
 	log := conn.logger.With().Logger().Output(os.Stdout)
-	log.Info().Msg("Global database lock acquired")
-	conn.globalLockRequested = 0
+	log.Info().Msg("Attempting to acquire global database lock")
+	conn.globalLockRequested = 1
+	defer func() { conn.globalLockRequested = 0 }()
+	timeout := time.After(timeoutAfter)
+	attempt := 0
+	for {
+		if conn.acquireGlobalLock() {
+			log.Info().Msg("Global database lock acquired")
+			return
+		}
+		select {
+		case <-timeout:
+			log.Info().Msg("Timeout: Global database lock abandoned")
+			return
+		case <-time.After(100 * time.Millisecond):
+			attempt++
+		}
+	}
 }
 
-// Resume allows transactions to proceed.
+// Release the global lock
 func (conn *SafeConn) Resume() {
 	conn.releaseGlobalLock()
 	// force logger to log to Stdout
@@ -179,8 +190,6 @@ func ConnectToDatabase(dbName string, logger *zerolog.Logger) (*SafeConn, error)
 	if err != nil {
 		return nil, errors.Wrap(err, "sql.Open")
 	}
-
 	conn := MakeSafe(db, logger)
-
 	return conn, nil
 }

@@ -22,6 +22,7 @@ type Config struct {
 	WriteTimeout       time.Duration // Timeout for writing requests in seconds
 	IdleTimeout        time.Duration // Timeout for idle connections in seconds
 	DBName             string        // Filename of the db (doesnt include file extension)
+	DBLockTimeout      time.Duration // Timeout for acquiring database lock
 	SecretKey          string        // Secret key for signing tokens
 	AccessTokenExpiry  int64         // Access token expiry in minutes
 	RefreshTokenExpiry int64         // Refresh token expiry in minutes
@@ -87,6 +88,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		WriteTimeout:       GetEnvDur("WRITE_TIMEOUT", 10),
 		IdleTimeout:        GetEnvDur("IDLE_TIMEOUT", 120),
 		DBName:             GetEnvDefault("DB_NAME", "projectreshoot"),
+		DBLockTimeout:      GetEnvDur("DB_LOCK_TIMEOUT", 60),
 		SecretKey:          os.Getenv("SECRET_KEY"),
 		AccessTokenExpiry:  GetEnvInt64("ACCESS_TOKEN_EXPIRY", 5),
 		RefreshTokenExpiry: GetEnvInt64("REFRESH_TOKEN_EXPIRY", 1440), // defaults to 1 day

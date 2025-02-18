@@ -48,7 +48,12 @@ func getStaticFiles(logger *zerolog.Logger) (http.FileSystem, error) {
 
 var maint uint32 // atomic: 1 if in maintenance mode
 
-func handleMaintSignals(conn *db.SafeConn, srv *http.Server, logger *zerolog.Logger) {
+func handleMaintSignals(
+	conn *db.SafeConn,
+	srv *http.Server,
+	logger *zerolog.Logger,
+	config *config.Config,
+) {
 	ch := make(chan os.Signal, 1)
 	srv.RegisterOnShutdown(func() {
 		close(ch)
@@ -62,7 +67,7 @@ func handleMaintSignals(conn *db.SafeConn, srv *http.Server, logger *zerolog.Log
 					log := logger.With().Logger().Output(os.Stdout)
 					log.Info().Msg("Signal received: Starting maintenance")
 					log.Info().Msg("Attempting to acquire database lock")
-					conn.Pause()
+					conn.Pause(config.DBLockTimeout * time.Second)
 				}
 			case syscall.SIGUSR2:
 				if atomic.LoadUint32(&maint) != 0 {
@@ -139,7 +144,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	}
 
 	// Setups a channel to listen for os.Signal
-	handleMaintSignals(conn, httpServer, logger)
+	handleMaintSignals(conn, httpServer, logger, config)
 
 	// Runs the http server
 	go func() {

@@ -87,7 +87,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		ReadHeaderTimeout:  GetEnvDur("READ_HEADER_TIMEOUT", 2),
 		WriteTimeout:       GetEnvDur("WRITE_TIMEOUT", 10),
 		IdleTimeout:        GetEnvDur("IDLE_TIMEOUT", 120),
-		DBName:             "0.1.0",
+		DBName:             "00001",
 		DBLockTimeout:      GetEnvDur("DB_LOCK_TIMEOUT", 60),
 		SecretKey:          os.Getenv("SECRET_KEY"),
 		AccessTokenExpiry:  GetEnvInt64("ACCESS_TOKEN_EXPIRY", 5),

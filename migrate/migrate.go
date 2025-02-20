@@ -32,7 +32,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Invalid version number: %v", err)
 	}
-
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		log.Fatalf("Database file does not exist: %v", filePath)
+	}
 	db, err := sql.Open("sqlite", filePath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)

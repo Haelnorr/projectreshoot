@@ -21,4 +21,7 @@ END;
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TRIGGER IF EXISTS cleanup_expired_tokens;
+DROP TABLE IF EXISTS jwtblacklist;
+DROP TABLE IF EXISTS users;
 -- +goose StatementEnd

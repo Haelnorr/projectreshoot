@@ -1,5 +1,6 @@
 # Makefile
 .PHONY: build
+.PHONY: migrate
 
 BINARY_NAME=projectreshoot
 
@@ -29,3 +30,8 @@ test:
 
 clean:
 	go clean
+
+migrate:
+	go mod tidy && \
+	go generate && \
+	go build -ldflags="-w -s" -o psmigrate ./migrate

@@ -21,7 +21,7 @@ func findMigrations() (*fs.FS, error) {
 
 	for {
 		if _, err := os.Stat(filepath.Join(dir, "main.go")); err == nil {
-			migrationsdir := os.DirFS(filepath.Join(dir, "migrations"))
+			migrationsdir := os.DirFS(filepath.Join(dir, "migrate", "migrations"))
 			return &migrationsdir, nil
 		}
 

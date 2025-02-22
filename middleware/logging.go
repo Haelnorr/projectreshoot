@@ -44,7 +44,7 @@ func Logging(logger *zerolog.Logger, next http.Handler) http.Handler {
 			Str("method", r.Method).
 			Str("resource", r.URL.Path).
 			Dur("time_elapsed", time.Since(start)).
-			Str("remote_addr", r.RemoteAddr).
+			Str("remote_addr", r.Header.Get("X-Forwarded-For")).
 			Msg("Served")
 	})
 }

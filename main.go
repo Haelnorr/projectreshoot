@@ -94,6 +94,12 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		return errors.Wrap(err, "server.GetConfig")
 	}
 
+	// Return the version of the database required
+	if args["dbver"] == "true" {
+		fmt.Printf("Database version: %s\n", config.DBName)
+		return nil
+	}
+
 	var logfile *os.File = nil
 	if config.LogOutput == "both" || config.LogOutput == "file" {
 		logfile, err = logging.GetLogFile(config.LogDir)
@@ -186,6 +192,7 @@ func main() {
 	host := flag.String("host", "", "Override host to listen on")
 	port := flag.String("port", "", "Override port to listen on")
 	test := flag.Bool("test", false, "Run test function instead of main program")
+	dbver := flag.Bool("dbver", false, "Get the version of the database required")
 	loglevel := flag.String("loglevel", "", "Set log level")
 	logoutput := flag.String("logoutput", "", "Set log destination (file, console or both)")
 	flag.Parse()
@@ -195,6 +202,7 @@ func main() {
 		"host":      *host,
 		"port":      *port,
 		"test":      strconv.FormatBool(*test),
+		"dbver":     strconv.FormatBool(*dbver),
 		"loglevel":  *loglevel,
 		"logoutput": *logoutput,
 	}

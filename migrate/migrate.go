@@ -20,7 +20,7 @@ var migrationsFS embed.FS
 
 func main() {
 	if len(os.Args) != 4 {
-		fmt.Println("Usage: psmigrate <file_path> up-to|down-to <version>")
+		fmt.Println("Usage: prmigrate <file_path> up-to|down-to <version>")
 		os.Exit(1)
 	}
 

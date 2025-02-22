@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "users" (
     created_at INTEGER DEFAULT (unixepoch()),
     bio TEXT DEFAULT ""
 ) STRICT;
-CREATE TRIGGER cleanup_expired_tokens
+CREATE TRIGGER IF NOT EXISTS cleanup_expired_tokens
 AFTER INSERT ON jwtblacklist
 BEGIN
 DELETE FROM jwtblacklist WHERE exp < strftime('%s', 'now');

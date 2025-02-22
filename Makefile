@@ -18,7 +18,7 @@ dev:
 
 tester:
 	go mod tidy && \
-	go run . --port 3232 --test --loglevel trace
+	go run . --port 3232 --tester --loglevel trace
 
 test:
 	go mod tidy && \

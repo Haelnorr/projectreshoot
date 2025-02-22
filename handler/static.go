@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"net/http"
@@ -42,7 +42,7 @@ func (f neuteredReaddirFile) Readdir(count int) ([]os.FileInfo, error) {
 
 // Handles requests for static files, without allowing access to the
 // directory viewer and returning 404 if an exact file is not found
-func HandleStatic(staticFS *http.FileSystem) http.Handler {
+func StaticFS(staticFS *http.FileSystem) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			nfs := justFilesFilesystem{*staticFS}

@@ -33,8 +33,8 @@ func TestReauthRequired(t *testing.T) {
 	var maint uint32
 	atomic.StoreUint32(&maint, 0)
 	// Add the middleware and create the server
-	reauthRequiredHandler := RequiresFresh(testHandler)
-	loginRequiredHandler := RequiresLogin(reauthRequiredHandler)
+	reauthRequiredHandler := FreshReq(testHandler)
+	loginRequiredHandler := LoginReq(reauthRequiredHandler)
 	authHandler := Authentication(logger, cfg, sconn, loginRequiredHandler, &maint)
 	server := httptest.NewServer(authHandler)
 	defer server.Close()

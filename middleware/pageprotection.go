@@ -3,15 +3,15 @@ package middleware
 import (
 	"net/http"
 	"projectreshoot/contexts"
-	"projectreshoot/handlers"
+	"projectreshoot/handler"
 )
 
 // Checks if the user is set in the context and shows 401 page if not logged in
-func RequiresLogin(next http.Handler) http.Handler {
+func LoginReq(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := contexts.GetUser(r.Context())
 		if user == nil {
-			handlers.ErrorPage(http.StatusUnauthorized, w, r)
+			handler.ErrorPage(http.StatusUnauthorized, w, r)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -20,7 +20,7 @@ func RequiresLogin(next http.Handler) http.Handler {
 
 // Checks if the user is set in the context and redirects them to profile if
 // they are logged in
-func RequiresLogout(next http.Handler) http.Handler {
+func LogoutReq(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := contexts.GetUser(r.Context())
 		if user != nil {

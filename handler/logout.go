@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"context"
@@ -80,7 +80,7 @@ func revokeTokens(
 }
 
 // Handle a logout request
-func HandleLogout(
+func Logout(
 	config *config.Config,
 	logger *zerolog.Logger,
 	conn *db.SafeConn,

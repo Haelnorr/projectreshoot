@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 	"projectreshoot/contexts"
-	"projectreshoot/handlers"
+	"projectreshoot/handler"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -31,7 +31,7 @@ func Logging(logger *zerolog.Logger, next http.Handler) http.Handler {
 		}
 		start, err := contexts.GetStartTime(r.Context())
 		if err != nil {
-			handlers.ErrorPage(http.StatusInternalServerError, w, r)
+			handler.ErrorPage(http.StatusInternalServerError, w, r)
 			return
 		}
 		wrapped := &wrappedWriter{

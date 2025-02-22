@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"context"
@@ -99,7 +99,7 @@ func validatePassword(
 }
 
 // Handle request to reauthenticate (i.e. make token fresh again)
-func HandleReauthenticate(
+func Reauthenticate(
 	logger *zerolog.Logger,
 	config *config.Config,
 	conn *db.SafeConn,

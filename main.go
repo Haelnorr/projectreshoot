@@ -21,6 +21,7 @@ import (
 	"projectreshoot/db"
 	"projectreshoot/logging"
 	"projectreshoot/server"
+	"projectreshoot/tests"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -96,7 +97,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 
 	// Return the version of the database required
 	if args["dbver"] == "true" {
-		fmt.Printf("Database version: %s\n", config.DBName)
+		fmt.Fprintf(w, "Database version: %s\n", config.DBName)
 		return nil
 	}
 
@@ -126,9 +127,23 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 
 	logger.Debug().Msg("Config loaded and logger started")
 	logger.Debug().Msg("Connecting to database")
-	conn, err := db.ConnectToDatabase(config.DBName, logger)
-	if err != nil {
-		return errors.Wrap(err, "db.ConnectToDatabase")
+	var conn *db.SafeConn
+	if args["test"] == "true" {
+		logger.Debug().Msg("Server in test mode, using test database")
+		ver, err := strconv.ParseInt(config.DBName, 10, 0)
+		if err != nil {
+			return errors.Wrap(err, "strconv.ParseInt")
+		}
+		testconn, err := tests.SetupTestDB(ver)
+		if err != nil {
+			return errors.Wrap(err, "tests.SetupTestDB")
+		}
+		conn = db.MakeSafe(testconn, logger)
+	} else {
+		conn, err = db.ConnectToDatabase(config.DBName, logger)
+		if err != nil {
+			return errors.Wrap(err, "db.ConnectToDatabase")
+		}
 	}
 	defer conn.Close()
 
@@ -149,7 +164,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	}
 
 	// Runs function for testing in dev if --test flag true
-	if args["test"] == "true" {
+	if args["tester"] == "true" {
 		logger.Debug().Msg("Running tester function")
 		test(config, logger, conn, httpServer)
 		return nil
@@ -191,7 +206,8 @@ func main() {
 	// Parse commandline args
 	host := flag.String("host", "", "Override host to listen on")
 	port := flag.String("port", "", "Override port to listen on")
-	test := flag.Bool("test", false, "Run test function instead of main program")
+	test := flag.Bool("test", false, "Run server in test mode")
+	tester := flag.Bool("test", false, "Run tester function instead of main program")
 	dbver := flag.Bool("dbver", false, "Get the version of the database required")
 	loglevel := flag.String("loglevel", "", "Set log level")
 	logoutput := flag.String("logoutput", "", "Set log destination (file, console or both)")
@@ -202,6 +218,7 @@ func main() {
 		"host":      *host,
 		"port":      *port,
 		"test":      strconv.FormatBool(*test),
+		"tester":    strconv.FormatBool(*tester),
 		"dbver":     strconv.FormatBool(*dbver),
 		"loglevel":  *loglevel,
 		"logoutput": *logoutput,

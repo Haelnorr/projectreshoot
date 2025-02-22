@@ -41,6 +41,7 @@ func checkDBVersion(db *sql.DB, expectVer int) error {
 	if err != nil {
 		return errors.Wrap(err, "checkDBVersion")
 	}
+	defer rows.Close()
 	if rows.Next() {
 		var version int
 		err = rows.Scan(&version)

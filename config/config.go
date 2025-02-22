@@ -98,7 +98,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		LogDir:             GetEnvDefault("LOG_DIR", ""),
 	}
 
-	if config.SecretKey == "" {
+	if config.SecretKey == "" && args["dbver"] != "true" {
 		return nil, errors.New("Envar not set: SECRET_KEY")
 	}
 

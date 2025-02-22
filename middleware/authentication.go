@@ -10,7 +10,7 @@ import (
 	"projectreshoot/contexts"
 	"projectreshoot/cookies"
 	"projectreshoot/db"
-	"projectreshoot/handlers"
+	"projectreshoot/handler"
 	"projectreshoot/jwt"
 
 	"github.com/pkg/errors"
@@ -119,7 +119,7 @@ func Authentication(
 			// Failed to start transaction, skip auth
 			logger.Warn().Err(err).
 				Msg("Skipping Auth - unable to start a transaction")
-			handlers.ErrorPage(http.StatusServiceUnavailable, w, r)
+			handler.ErrorPage(http.StatusServiceUnavailable, w, r)
 			return
 		}
 		user, err := getAuthenticatedUser(config, ctx, tx, w, r)

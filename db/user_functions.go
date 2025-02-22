@@ -56,21 +56,21 @@ func fetchUserData(
 	return rows, nil
 }
 
-// Scan the next row into the provided user pointer. Calls rows.Next() and
-// assumes only row in the result. Providing a rows object with more than 1
-// row may result in undefined behaviour.
+// Calls rows.Next() and scans the row into the provided user pointer.
+// Will error if no row available
 func scanUserRow(user *User, rows *sql.Rows) error {
-	for rows.Next() {
-		err := rows.Scan(
-			&user.ID,
-			&user.Username,
-			&user.Password_hash,
-			&user.Created_at,
-			&user.Bio,
-		)
-		if err != nil {
-			return errors.Wrap(err, "rows.Scan")
-		}
+	if !rows.Next() {
+		return errors.New("User not found")
+	}
+	err := rows.Scan(
+		&user.ID,
+		&user.Username,
+		&user.Password_hash,
+		&user.Created_at,
+		&user.Bio,
+	)
+	if err != nil {
+		return errors.Wrap(err, "rows.Scan")
 	}
 	return nil
 }

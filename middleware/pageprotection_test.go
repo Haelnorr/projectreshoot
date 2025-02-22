@@ -33,7 +33,7 @@ func TestPageLoginRequired(t *testing.T) {
 	var maint uint32
 	atomic.StoreUint32(&maint, 0)
 	// Add the middleware and create the server
-	loginRequiredHandler := RequiresLogin(testHandler)
+	loginRequiredHandler := LoginReq(testHandler)
 	authHandler := Authentication(logger, cfg, sconn, loginRequiredHandler, &maint)
 	server := httptest.NewServer(authHandler)
 	defer server.Close()

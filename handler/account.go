@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 )
 
 // Renders the account page on the 'General' subpage
-func HandleAccountPage() http.Handler {
+func AccountPage() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("subpage")
@@ -30,7 +30,7 @@ func HandleAccountPage() http.Handler {
 }
 
 // Handles a request to change the subpage for the Accou/accountnt page
-func HandleAccountSubpage() http.Handler {
+func AccountSubpage() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
@@ -42,7 +42,7 @@ func HandleAccountSubpage() http.Handler {
 }
 
 // Handles a request to change the users username
-func HandleChangeUsername(
+func ChangeUsername(
 	logger *zerolog.Logger,
 	conn *db.SafeConn,
 ) http.Handler {
@@ -88,7 +88,7 @@ func HandleChangeUsername(
 }
 
 // Handles a request to change the users bio
-func HandleChangeBio(
+func ChangeBio(
 	logger *zerolog.Logger,
 	conn *db.SafeConn,
 ) http.Handler {
@@ -144,7 +144,7 @@ func validateChangePassword(
 }
 
 // Handles a request to change the users password
-func HandleChangePassword(
+func ChangePassword(
 	logger *zerolog.Logger,
 	conn *db.SafeConn,
 ) http.Handler {

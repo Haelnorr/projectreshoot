@@ -5,7 +5,7 @@ import (
 
 	"projectreshoot/config"
 	"projectreshoot/db"
-	"projectreshoot/handlers"
+	"projectreshoot/handler"
 	"projectreshoot/middleware"
 	"projectreshoot/view/page"
 
@@ -20,82 +20,44 @@ func addRoutes(
 	conn *db.SafeConn,
 	staticFS *http.FileSystem,
 ) {
+	route := mux.Handle
+	loggedIn := middleware.LoginReq
+	loggedOut := middleware.LogoutReq
+	fresh := middleware.FreshReq
+
 	// Health check
 	mux.HandleFunc("GET /healthz", func(http.ResponseWriter, *http.Request) {})
 
 	// Static files
-	mux.Handle("GET /static/", http.StripPrefix("/static/", handlers.HandleStatic(staticFS)))
+	route("GET /static/", http.StripPrefix("/static/", handler.StaticFS(staticFS)))
 
 	// Index page and unhandled catchall (404)
-	mux.Handle("GET /", handlers.HandleRoot())
+	route("GET /", handler.Root())
 
 	// Static content, unprotected pages
-	mux.Handle("GET /about", handlers.HandlePage(page.About()))
+	route("GET /about", handler.HandlePage(page.About()))
 
 	// Login page and handlers
-	mux.Handle("GET /login",
-		middleware.RequiresLogout(
-			handlers.HandleLoginPage(config.TrustedHost),
-		))
-	mux.Handle("POST /login",
-		middleware.RequiresLogout(
-			handlers.HandleLoginRequest(
-				config,
-				logger,
-				conn,
-			)))
+	route("GET /login", loggedOut(handler.LoginPage(config.TrustedHost)))
+	route("POST /login", loggedOut(handler.LoginRequest(config, logger, conn)))
 
 	// Register page and handlers
-	mux.Handle("GET /register",
-		middleware.RequiresLogout(
-			handlers.HandleRegisterPage(config.TrustedHost),
-		))
-	mux.Handle("POST /register",
-		middleware.RequiresLogout(
-			handlers.HandleRegisterRequest(
-				config,
-				logger,
-				conn,
-			)))
+	route("GET /register", loggedOut(handler.RegisterPage(config.TrustedHost)))
+	route("POST /register", loggedOut(handler.RegisterRequest(config, logger, conn)))
 
 	// Logout
-	mux.Handle("POST /logout", handlers.HandleLogout(config, logger, conn))
+	route("POST /logout", handler.Logout(config, logger, conn))
 
 	// Reauthentication request
-	mux.Handle("POST /reauthenticate",
-		middleware.RequiresLogin(
-			handlers.HandleReauthenticate(logger, config, conn),
-		))
+	route("POST /reauthenticate", loggedIn(handler.Reauthenticate(logger, config, conn)))
 
 	// Profile page
-	mux.Handle("GET /profile",
-		middleware.RequiresLogin(
-			handlers.HandleProfilePage(),
-		))
+	route("GET /profile", loggedIn(handler.ProfilePage()))
 
 	// Account page
-	mux.Handle("GET /account",
-		middleware.RequiresLogin(
-			handlers.HandleAccountPage(),
-		))
-	mux.Handle("POST /account-select-page",
-		middleware.RequiresLogin(
-			handlers.HandleAccountSubpage(),
-		))
-	mux.Handle("POST /change-username",
-		middleware.RequiresLogin(
-			middleware.RequiresFresh(
-				handlers.HandleChangeUsername(logger, conn),
-			),
-		))
-	mux.Handle("POST /change-bio",
-		middleware.RequiresLogin(
-			handlers.HandleChangeBio(logger, conn),
-		))
-	mux.Handle("POST /change-password",
-		middleware.RequiresLogin(
-			middleware.RequiresFresh(
-				handlers.HandleChangePassword(logger, conn),
-			),
-		))
+	route("GET /account", loggedIn(handler.AccountPage()))
+	route("POST /account-select-page", loggedIn(handler.AccountSubpage()))
+	route("POST /change-username", loggedIn(fresh(handler.ChangeUsername(logger, conn))))
+	route("POST /change-bio", loggedIn(handler.ChangeBio(logger, conn)))
+	route("POST /change-password", loggedIn(fresh(handler.ChangePassword(logger, conn))))
 }

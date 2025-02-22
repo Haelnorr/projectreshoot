@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func RequiresFresh(
+func FreshReq(
 	next http.Handler,
 ) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

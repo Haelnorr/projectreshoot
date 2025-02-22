@@ -48,9 +48,13 @@ fi
 DB_FILE="${DB_FILES[0]}"
 DB_VER=$(basename "$DB_FILE" .db)
 
-# Send SIGUSR1 to trigger maintenance mode
+# Send SIGUSR1 to trigger maintenance mode only for active services
+declare -a ACTIVE_PORTS=()
 for PORT in "${PORTS[@]}"; do
-    sudo systemctl kill -s SIGUSR1 "$SERVICE_NAME@$PORT.service"
+    if systemctl is-active --quiet "$SERVICE_NAME@$PORT.service"; then
+        sudo systemctl kill -s SIGUSR1 "$SERVICE_NAME@$PORT.service"
+        ACTIVE_PORTS+=("$PORT")
+    fi
 done
 trap release_maintenance EXIT
 
@@ -85,7 +89,7 @@ check_logs() {
 }
 
 # Check logs for each service
-for PORT in "${PORTS[@]}"; do
+for PORT in "${ACTIVE_PORTS[@]}"; do
     check_logs "$PORT"
 done
 

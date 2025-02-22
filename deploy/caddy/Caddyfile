@@ -1,12 +1,58 @@
 projectreshoot.com {
-    reverse_proxy localhost:3000 localhost:3001 localhost:3002 {
-        health_uri /healthz
-            fail_duration 30s
-    }
+	rate_limit {
+		zone auth {	
+			match {
+				method POST
+				path /login /register
+			}
+			key {remote_host}
+			events 4
+			window 1m
+		}
+        	zone client {
+            		key {remote_host}
+            		events 100
+            		window 1m
+        	}
+    	}
+	reverse_proxy localhost:3000 localhost:3001 localhost:3002 {
+		transport http {
+            		max_conns_per_host 10
+        	}
+		health_uri /healthz
+		fail_duration 30s
+	}
+	log {
+        	output file /var/log/caddy/access.log
+    	}
 }
+
 staging.projectreshoot.com {
-    reverse_proxy localhost:3005 localhost:3006 localhost:3007 {
-        health_uri /healthz
-            fail_duration 30s
-    }
+	rate_limit {
+		zone auth {	
+			match {
+				method POST
+				path /login /register
+			}
+			key {remote_host}
+			events 4
+			window 1m
+		}
+        	zone client {
+            		key {remote_host}
+            		events 100
+            		window 1m
+        	}
+    	}
+	reverse_proxy localhost:3005 localhost:3006 localhost:3007 {
+		transport http {
+            		max_conns_per_host 10
+        	}
+		health_uri /healthz
+		fail_duration 30s
+	}
+	log {
+        	output file /var/log/caddy/access-staging.log
+    	}
 }
+

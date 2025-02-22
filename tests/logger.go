@@ -24,6 +24,10 @@ func NilLogger() *zerolog.Logger {
 
 // Return a logger that makes use of the T.Log method to enable debugging tests
 func DebugLogger(t *testing.T) *zerolog.Logger {
-	logger := zerolog.New(&TLogWriter{t: t})
+	logger := zerolog.New(GetTLogWriter(t))
 	return &logger
+}
+
+func GetTLogWriter(t *testing.T) *TLogWriter {
+	return &TLogWriter{t: t}
 }

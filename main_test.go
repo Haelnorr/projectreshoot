@@ -18,14 +18,35 @@ func Test_main(t *testing.T) {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
-	args := map[string]string{}
+	args := map[string]string{"test": "true"}
 	var stdout bytes.Buffer
 	os.Setenv("SECRET_KEY", ".")
 	os.Setenv("HOST", "127.0.0.1")
 	os.Setenv("PORT", "3232")
-	go run(ctx, &stdout, args)
+	runSrvErr := make(chan error)
+	go func() {
+		if err := run(ctx, &stdout, args); err != nil {
+			runSrvErr <- err
+			return
+		}
+	}()
 
-	waitForReady(ctx, 10*time.Second, "http://127.0.0.1:3232/healthz")
+	go func() {
+		err := waitForReady(ctx, 10*time.Second, "http://127.0.0.1:3232/healthz")
+		if err != nil {
+			runSrvErr <- err
+			return
+		}
+		runSrvErr <- nil
+	}()
+	select {
+	case err := <-runSrvErr:
+		if err != nil {
+			t.Fatalf("Error starting test server: %s", err)
+			return
+		}
+		t.Log("Test server started")
+	}
 
 	t.Run("SIGUSR1 puts database into global lock", func(t *testing.T) {
 		done := make(chan bool)
@@ -99,6 +120,7 @@ func waitForReady(
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Printf("Error making request: %s\n", err.Error())
+			time.Sleep(250 * time.Millisecond)
 			continue
 		}
 		if resp.StatusCode == http.StatusOK {

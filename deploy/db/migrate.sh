@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ -z "$1" ]]; then
-    echo "Usage: $0 <environment> <version>"
+    echo "Usage: $0 <environment> <version> <commit-hash>"
     exit 1
 fi
 ENVR="$1"
@@ -10,7 +10,7 @@ if [[ "$ENVR" != "production" && "$ENVR" != "staging" ]]; then
     exit 1
 fi
 if [[ -z "$2" ]]; then
-    echo "Usage: $0 <environment> <version>"
+    echo "Usage: $0 <environment> <version> <commit-hash>"
     exit 1
 fi
 TGT_VER="$2"
@@ -19,8 +19,13 @@ if ! [[ $TGT_VER =~ $re ]] ; then
    echo "Error: version not a number" >&2
    exit 1
 fi
-
-BACKUP_OUTPUT=$(/bin/bash ./backup.sh "$ENVR" 2>&1)
+if [ -z "$3" ]; then
+    echo "Usage: $0 <environment> <version> <commit-hash>"
+  exit 1
+fi
+COMMIT_HASH=$3
+MIGRATION_BIN="/home/deploy/migration-bin"
+BACKUP_OUTPUT=$(/bin/bash ${MIGRATION_BIN}/backup.sh "$ENVR" 2>&1)
 echo "$BACKUP_OUTPUT"
 if [[ $? -ne 0 ]]; then
     exit 1
@@ -59,7 +64,7 @@ failed_cleanup() {
 trap 'if [ $? -ne 0 ]; then failed_cleanup; fi' EXIT
 
 echo "Migration in progress from $CUR_VER to $TGT_VER"
-./prmigrate $UPDATED_BACKUP $CMD $TGT_VER
+${MIGRATION_BIN}/prmigrate-$COMMIT_HASH $UPDATED_BACKUP $CMD $TGT_VER
 if [ $? -ne 0 ]; then
     echo "Migration failed"
     exit 1

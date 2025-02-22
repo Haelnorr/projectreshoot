@@ -34,4 +34,4 @@ clean:
 migrate:
 	go mod tidy && \
 	go generate && \
-	go build -ldflags="-w -s" -o prmigrate ./migrate
+	go build -ldflags="-w -s" -o prmigrate${SUFFIX} ./migrate

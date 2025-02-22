@@ -64,7 +64,7 @@ failed_cleanup() {
 trap 'if [ $? -ne 0 ]; then failed_cleanup; fi' EXIT
 
 echo "Migration in progress from $CUR_VER to $TGT_VER"
-${MIGRATION_BIN}/prmigrate-$COMMIT_HASH $UPDATED_BACKUP $CMD $TGT_VER
+${MIGRATION_BIN}/prmigrate-${ENVR}-${COMMIT_HASH} $UPDATED_BACKUP $CMD $TGT_VER
 if [ $? -ne 0 ]; then
     echo "Migration failed"
     exit 1

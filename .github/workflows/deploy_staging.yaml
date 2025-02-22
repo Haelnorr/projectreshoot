@@ -33,11 +33,15 @@ jobs:
       - name: Build the binary
         run: make build SUFFIX=-staging-$GITHUB_SHA
 
+      - name: Build the migration binary
+        run: make migrate SUFFIX=-staging-$GITHUB_SHA
+
       - name: Deploy to Server
         env:
           USER: deploy
           HOST: projectreshoot.com
           DIR: /home/deploy/releases/staging
+          MIG_DIR: /home/deploy/migration-bin
           DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
@@ -49,7 +53,13 @@ jobs:
           echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
 
           ssh -i ~/.ssh/id_ed25519 $USER@$HOST mkdir -p $DIR
-
           scp -i ~/.ssh/id_ed25519 projectreshoot-staging-${GITHUB_SHA} $USER@$HOST:$DIR
 
-          ssh -i ~/.ssh/id_ed25519 $USER@$HOST 'bash -s' < ./deploy/deploy_staging.sh $GITHUB_SHA
+          ssh -i ~/.ssh/id_ed25519 $USER@$HOST mkdir -p $MIG_DIR
+          scp -i ~/.ssh/id_ed25519 prmigrate-${GITHUB_SHA} $USER@$HOST:$MIG_DIR
+
+          scp -i ~/.ssh/id_ed25519 ./deploy/db/backup.sh $USER@$HOST:$MIG_DIR
+          scp -i ~/.ssh/id_ed25519 ./deploy/db/migrate.sh $USER@$HOST:$MIG_DIR
+          scp -i ~/.ssh/id_ed25519 ./deploy/db/migrationcleanup.sh $USER@$HOST:$MIG_DIR
+
+          ssh -i ~/.ssh/id_ed25519 $USER@$HOST 'bash -s' < ./deploy/deploy.sh $GITHUB_SHA staging

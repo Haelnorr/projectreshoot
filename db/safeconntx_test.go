@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"projectreshoot/tests"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -12,8 +13,12 @@ import (
 )
 
 func TestSafeConn(t *testing.T) {
+	cfg, err := tests.TestConfig()
+	require.NoError(t, err)
 	logger := tests.NilLogger()
-	conn, err := tests.SetupTestDB()
+	ver, err := strconv.ParseInt(cfg.DBName, 10, 0)
+	require.NoError(t, err)
+	conn, err := tests.SetupTestDB(ver)
 	require.NoError(t, err)
 	sconn := MakeSafe(conn, logger)
 	defer sconn.Close()
@@ -77,8 +82,12 @@ func TestSafeConn(t *testing.T) {
 	})
 }
 func TestSafeTX(t *testing.T) {
+	cfg, err := tests.TestConfig()
+	require.NoError(t, err)
 	logger := tests.NilLogger()
-	conn, err := tests.SetupTestDB()
+	ver, err := strconv.ParseInt(cfg.DBName, 10, 0)
+	require.NoError(t, err)
+	conn, err := tests.SetupTestDB(ver)
 	require.NoError(t, err)
 	sconn := MakeSafe(conn, logger)
 	defer sconn.Close()

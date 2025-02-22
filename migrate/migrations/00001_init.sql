@@ -1,5 +1,6 @@
+-- +goose Up
+-- +goose StatementBegin
 PRAGMA foreign_keys=ON;
-BEGIN TRANSACTION;
 CREATE TABLE IF NOT EXISTS jwtblacklist (
 jti TEXT PRIMARY KEY CHECK(jti GLOB '[0-9a-fA-F-]*'),
 exp INTEGER NOT NULL
@@ -16,4 +17,11 @@ AFTER INSERT ON jwtblacklist
 BEGIN
 DELETE FROM jwtblacklist WHERE exp < strftime('%s', 'now');
 END;
-COMMIT;
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TRIGGER IF EXISTS cleanup_expired_tokens;
+DROP TABLE IF EXISTS jwtblacklist;
+DROP TABLE IF EXISTS users;
+-- +goose StatementEnd

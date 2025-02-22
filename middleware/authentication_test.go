@@ -17,15 +17,15 @@ import (
 )
 
 func TestAuthenticationMiddleware(t *testing.T) {
+	cfg, err := tests.TestConfig()
+	require.NoError(t, err)
 	logger := tests.NilLogger()
-	// Basic setup
-	conn, err := tests.SetupTestDB()
+	ver, err := strconv.ParseInt(cfg.DBName, 10, 0)
+	require.NoError(t, err)
+	conn, err := tests.SetupTestDB(ver)
 	require.NoError(t, err)
 	sconn := db.MakeSafe(conn, logger)
 	defer sconn.Close()
-
-	cfg, err := tests.TestConfig()
-	require.NoError(t, err)
 
 	// Handler to check outcome of Authentication middleware
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

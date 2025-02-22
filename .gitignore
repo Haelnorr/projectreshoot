@@ -4,6 +4,7 @@ query.sql
 .logs/
 server.log
 tmp/
+prmigrate
 projectreshoot
 static/css/output.css
 view/**/*_templ.go

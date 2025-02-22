@@ -1,26 +1,102 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func Test_main(t *testing.T) {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
-	args := map[string]string{}
-	go run(ctx, os.Stdout, args)
+	args := map[string]string{"test": "true"}
+	var stdout bytes.Buffer
+	os.Setenv("SECRET_KEY", ".")
+	os.Setenv("HOST", "127.0.0.1")
+	os.Setenv("PORT", "3232")
+	runSrvErr := make(chan error)
+	go func() {
+		if err := run(ctx, &stdout, args); err != nil {
+			runSrvErr <- err
+			return
+		}
+	}()
 
-	// wait for the server to become available
-	waitForReady(ctx, 10*time.Second, "http://localhost:3333/healthz")
+	go func() {
+		err := waitForReady(ctx, 10*time.Second, "http://127.0.0.1:3232/healthz")
+		if err != nil {
+			runSrvErr <- err
+			return
+		}
+		runSrvErr <- nil
+	}()
+	select {
+	case err := <-runSrvErr:
+		if err != nil {
+			t.Fatalf("Error starting test server: %s", err)
+			return
+		}
+		t.Log("Test server started")
+	}
 
-	// do tests
-	fmt.Println("Tests starting")
+	t.Run("SIGUSR1 puts database into global lock", func(t *testing.T) {
+		done := make(chan bool)
+		go func() {
+			expected := "Global database lock acquired"
+			for {
+				if strings.Contains(stdout.String(), expected) {
+					done <- true
+					return
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
+		}()
+
+		proc, err := os.FindProcess(os.Getpid())
+		require.NoError(t, err)
+		proc.Signal(syscall.SIGUSR1)
+
+		select {
+		case <-done:
+			t.Log("found")
+		case <-time.After(250 * time.Millisecond):
+			t.Errorf("Not found")
+		}
+	})
+
+	t.Run("SIGUSR2 releases database global lock", func(t *testing.T) {
+		done := make(chan bool)
+		go func() {
+			expected := "Global database lock released"
+			for {
+				if strings.Contains(stdout.String(), expected) {
+					done <- true
+					return
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
+		}()
+
+		proc, err := os.FindProcess(os.Getpid())
+		require.NoError(t, err)
+		proc.Signal(syscall.SIGUSR2)
+
+		select {
+		case <-done:
+			t.Log("found")
+		case <-time.After(250 * time.Millisecond):
+			t.Errorf("Not found")
+		}
+	})
 }
 
 func waitForReady(
@@ -44,6 +120,7 @@ func waitForReady(
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Printf("Error making request: %s\n", err.Error())
+			time.Sleep(250 * time.Millisecond)
 			continue
 		}
 		if resp.StatusCode == http.StatusOK {

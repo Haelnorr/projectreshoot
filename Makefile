@@ -1,5 +1,6 @@
 # Makefile
 .PHONY: build
+.PHONY: migrate
 
 BINARY_NAME=projectreshoot
 
@@ -17,14 +18,20 @@ dev:
 
 tester:
 	go mod tidy && \
-	go run . --port 3232 --test --loglevel trace
+	go run . --port 3232 --tester --loglevel trace
 
 test:
-	rm -f **/.projectreshoot-test-database.db && \
 	go mod tidy && \
    	templ generate && \
 	go generate && \
+	go test .
+	go test ./db
 	go test ./middleware
 
 clean:
 	go clean
+
+migrate:
+	go mod tidy && \
+	go generate && \
+	go build -ldflags="-w -s" -o prmigrate${SUFFIX} ./migrate

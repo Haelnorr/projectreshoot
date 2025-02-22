@@ -21,7 +21,8 @@ type Config struct {
 	ReadHeaderTimeout  time.Duration // Timeout for reading request headers in seconds
 	WriteTimeout       time.Duration // Timeout for writing requests in seconds
 	IdleTimeout        time.Duration // Timeout for idle connections in seconds
-	DBName             string        // Filename of the db (doesnt include file extension)
+	DBName             string        // Filename of the db - hardcoded and doubles as DB version
+	DBLockTimeout      time.Duration // Timeout for acquiring database lock
 	SecretKey          string        // Secret key for signing tokens
 	AccessTokenExpiry  int64         // Access token expiry in minutes
 	RefreshTokenExpiry int64         // Refresh token expiry in minutes
@@ -33,10 +34,7 @@ type Config struct {
 
 // Load the application configuration and get a pointer to the Config object
 func GetConfig(args map[string]string) (*Config, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println(err)
-	}
+	godotenv.Load(".env")
 	var (
 		host      string
 		port      string
@@ -89,7 +87,8 @@ func GetConfig(args map[string]string) (*Config, error) {
 		ReadHeaderTimeout:  GetEnvDur("READ_HEADER_TIMEOUT", 2),
 		WriteTimeout:       GetEnvDur("WRITE_TIMEOUT", 10),
 		IdleTimeout:        GetEnvDur("IDLE_TIMEOUT", 120),
-		DBName:             GetEnvDefault("DB_NAME", "projectreshoot"),
+		DBName:             "00001",
+		DBLockTimeout:      GetEnvDur("DB_LOCK_TIMEOUT", 60),
 		SecretKey:          os.Getenv("SECRET_KEY"),
 		AccessTokenExpiry:  GetEnvInt64("ACCESS_TOKEN_EXPIRY", 5),
 		RefreshTokenExpiry: GetEnvInt64("REFRESH_TOKEN_EXPIRY", 1440), // defaults to 1 day
@@ -99,7 +98,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		LogDir:             GetEnvDefault("LOG_DIR", ""),
 	}
 
-	if config.SecretKey == "" {
+	if config.SecretKey == "" && args["dbver"] != "true" {
 		return nil, errors.New("Envar not set: SECRET_KEY")
 	}
 

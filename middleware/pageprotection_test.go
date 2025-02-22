@@ -3,8 +3,11 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"sync/atomic"
 	"testing"
 
+	"projectreshoot/db"
 	"projectreshoot/tests"
 
 	"github.com/stretchr/testify/assert"
@@ -12,23 +15,26 @@ import (
 )
 
 func TestPageLoginRequired(t *testing.T) {
-	// Basic setup
 	cfg, err := tests.TestConfig()
 	require.NoError(t, err)
 	logger := tests.NilLogger()
-	conn, err := tests.SetupTestDB()
+	ver, err := strconv.ParseInt(cfg.DBName, 10, 0)
 	require.NoError(t, err)
-	require.NotNil(t, conn)
-	defer tests.DeleteTestDB()
+	conn, err := tests.SetupTestDB(ver)
+	require.NoError(t, err)
+	sconn := db.MakeSafe(conn, logger)
+	defer sconn.Close()
 
 	// Handler to check outcome of Authentication middleware
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	var maint uint32
+	atomic.StoreUint32(&maint, 0)
 	// Add the middleware and create the server
-	loginRequiredHandler := RequiresLogin(testHandler)
-	authHandler := Authentication(logger, cfg, conn, loginRequiredHandler)
+	loginRequiredHandler := LoginReq(testHandler)
+	authHandler := Authentication(logger, cfg, sconn, loginRequiredHandler, &maint)
 	server := httptest.NewServer(authHandler)
 	defer server.Close()
 

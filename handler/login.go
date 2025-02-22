@@ -1,8 +1,9 @@
-package handlers
+package handler
 
 import (
-	"database/sql"
+	"context"
 	"net/http"
+	"time"
 
 	"projectreshoot/config"
 	"projectreshoot/cookies"
@@ -16,10 +17,14 @@ import (
 
 // Validates the username matches a user in the database and the password
 // is correct. Returns the corresponding user
-func validateLogin(conn *sql.DB, r *http.Request) (*db.User, error) {
+func validateLogin(
+	ctx context.Context,
+	tx *db.SafeTX,
+	r *http.Request,
+) (*db.User, error) {
 	formUsername := r.FormValue("username")
 	formPassword := r.FormValue("password")
-	user, err := db.GetUserFromUsername(conn, formUsername)
+	user, err := db.GetUserFromUsername(ctx, tx, formUsername)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.GetUserFromUsername")
 	}
@@ -44,16 +49,27 @@ func checkRememberMe(r *http.Request) bool {
 // Handles an attempted login request. On success will return a HTMX redirect
 // and on fail will return the login form again, passing the error to the
 // template for user feedback
-func HandleLoginRequest(
+func LoginRequest(
 	config *config.Config,
 	logger *zerolog.Logger,
-	conn *sql.DB,
+	conn *db.SafeConn,
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			r.ParseForm()
-			user, err := validateLogin(conn, r)
+			ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+			defer cancel()
+
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
 			if err != nil {
+				logger.Warn().Err(err).Msg("Failed to set token cookies")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			r.ParseForm()
+			user, err := validateLogin(ctx, tx, r)
+			if err != nil {
+				tx.Rollback()
 				if err.Error() != "Username or password incorrect" {
 					logger.Warn().Caller().Err(err).Msg("Login request failed")
 					w.WriteHeader(http.StatusInternalServerError)
@@ -66,10 +82,13 @@ func HandleLoginRequest(
 			rememberMe := checkRememberMe(r)
 			err = cookies.SetTokenCookies(w, r, config, user, true, rememberMe)
 			if err != nil {
+				tx.Rollback()
 				w.WriteHeader(http.StatusInternalServerError)
 				logger.Warn().Caller().Err(err).Msg("Failed to set token cookies")
+				return
 			}
 
+			tx.Commit()
 			pageFrom := cookies.CheckPageFrom(w, r)
 			w.Header().Set("HX-Redirect", pageFrom)
 		},
@@ -78,7 +97,7 @@ func HandleLoginRequest(
 
 // Handles a request to view the login page. Will attempt to set "pagefrom"
 // cookie so a successful login can redirect the user to the page they came
-func HandleLoginPage(trustedHost string) http.Handler {
+func LoginPage(trustedHost string) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			cookies.SetPageFrom(w, r, trustedHost)

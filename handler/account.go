@@ -1,8 +1,9 @@
-package handlers
+package handler
 
 import (
-	"database/sql"
+	"context"
 	"net/http"
+	"time"
 
 	"projectreshoot/contexts"
 	"projectreshoot/cookies"
@@ -15,7 +16,7 @@ import (
 )
 
 // Renders the account page on the 'General' subpage
-func HandleAccountPage() http.Handler {
+func AccountPage() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("subpage")
@@ -29,7 +30,7 @@ func HandleAccountPage() http.Handler {
 }
 
 // Handles a request to change the subpage for the Accou/accountnt page
-func HandleAccountSubpage() http.Handler {
+func AccountSubpage() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
@@ -41,65 +42,95 @@ func HandleAccountSubpage() http.Handler {
 }
 
 // Handles a request to change the users username
-func HandleChangeUsername(
+func ChangeUsername(
 	logger *zerolog.Logger,
-	conn *sql.DB,
+	conn *db.SafeConn,
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
+
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Error updating username")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
 			r.ParseForm()
 			newUsername := r.FormValue("username")
-
-			unique, err := db.CheckUsernameUnique(conn, newUsername)
+			unique, err := db.CheckUsernameUnique(ctx, tx, newUsername)
 			if err != nil {
+				tx.Rollback()
 				logger.Error().Err(err).Msg("Error updating username")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			if !unique {
+				tx.Rollback()
 				account.ChangeUsername("Username is taken", newUsername).
 					Render(r.Context(), w)
 				return
 			}
 			user := contexts.GetUser(r.Context())
-			err = user.ChangeUsername(conn, newUsername)
+			err = user.ChangeUsername(ctx, tx, newUsername)
 			if err != nil {
+				tx.Rollback()
 				logger.Error().Err(err).Msg("Error updating username")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+			tx.Commit()
 			w.Header().Set("HX-Refresh", "true")
 		},
 	)
 }
 
 // Handles a request to change the users bio
-func HandleChangeBio(
+func ChangeBio(
 	logger *zerolog.Logger,
-	conn *sql.DB,
+	conn *db.SafeConn,
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
+
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Error updating bio")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
 			r.ParseForm()
 			newBio := r.FormValue("bio")
 			leng := len([]rune(newBio))
 			if leng > 128 {
+				tx.Rollback()
 				account.ChangeBio("Bio limited to 128 characters", newBio).
 					Render(r.Context(), w)
 				return
 			}
 			user := contexts.GetUser(r.Context())
-			err := user.ChangeBio(conn, newBio)
+			err = user.ChangeBio(ctx, tx, newBio)
 			if err != nil {
+				tx.Rollback()
 				logger.Error().Err(err).Msg("Error updating bio")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+			tx.Commit()
 			w.Header().Set("HX-Refresh", "true")
 		},
 	)
 }
-func validateChangePassword(conn *sql.DB, r *http.Request) (string, error) {
+func validateChangePassword(
+	ctx context.Context,
+	tx *db.SafeTX,
+	r *http.Request,
+) (string, error) {
 	r.ParseForm()
 	formPassword := r.FormValue("password")
 	formConfirmPassword := r.FormValue("confirm-password")
@@ -113,24 +144,37 @@ func validateChangePassword(conn *sql.DB, r *http.Request) (string, error) {
 }
 
 // Handles a request to change the users password
-func HandleChangePassword(
+func ChangePassword(
 	logger *zerolog.Logger,
-	conn *sql.DB,
+	conn *db.SafeConn,
 ) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			newPass, err := validateChangePassword(conn, r)
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
+
+			// Start the transaction
+			tx, err := conn.Begin(ctx)
 			if err != nil {
+				logger.Warn().Err(err).Msg("Error updating password")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			newPass, err := validateChangePassword(ctx, tx, r)
+			if err != nil {
+				tx.Rollback()
 				account.ChangePassword(err.Error()).Render(r.Context(), w)
 				return
 			}
 			user := contexts.GetUser(r.Context())
-			err = user.SetPassword(conn, newPass)
+			err = user.SetPassword(ctx, tx, newPass)
 			if err != nil {
+				tx.Rollback()
 				logger.Error().Err(err).Msg("Error updating password")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+			tx.Commit()
 			w.Header().Set("HX-Refresh", "true")
 		},
 	)

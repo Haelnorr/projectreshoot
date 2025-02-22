@@ -8,18 +8,36 @@ if [ -z "$1" ]; then
   echo "Usage: $0 <commit-hash>"
   exit 1
 fi
-
 COMMIT_HASH=$1
-RELEASES_DIR="/home/deploy/releases/staging"
-DEPLOY_BIN="/home/deploy/staging/projectreshoot"
-SERVICE_NAME="staging.projectreshoot"
-BINARY_NAME="projectreshoot-staging-${COMMIT_HASH}"
-declare -a PORTS=("3005" "3006" "3007")
+ENVR="$2"
+if [[ "$ENVR" != "production" && "$ENVR" != "staging" ]]; then
+    echo "Error: environment must be 'production' or 'staging'."
+    exit 1
+fi
+
+RELEASES_DIR="/home/deploy/releases/$ENVR"
+DEPLOY_BIN="/home/deploy/$ENVR/projectreshoot"
+MIGRATION_BIN="/home/deploy/migration-bin"
+BINARY_NAME="projectreshoot-$ENVR-${COMMIT_HASH}"
+declare -a PORTS=("3000" "3001" "3002")
+if [[ "$ENVR" == "production" ]]; then
+    SERVICE_NAME="projectreshoot"
+    declare -a PORTS=("3000" "3001" "3002")
+else
+    SERVICE_NAME="$ENVR.projectreshoot"
+    declare -a PORTS=("3005" "3006" "3007")
+fi
 
 # Check if the binary exists
 if [ ! -f "${RELEASES_DIR}/${BINARY_NAME}" ]; then
   echo "Binary ${BINARY_NAME} not found in ${RELEASES_DIR}"
   exit 1
+fi
+DB_VER=$(${RELEASES_DIR}/${BINARY_NAME} --dbver | grep -oP '(?<=Database version: ).*')
+${MIGRATION_BIN}/migrate.sh $ENVR $DB_VER $COMMIT_HASH
+if [[ $? -ne 0 ]]; then
+    echo "Migration failed"
+    exit 1
 fi
 
 # Keep a reference to the previous binary from the symlink
@@ -92,3 +110,4 @@ for port in "${PORTS[@]}"; do
 done
 
 echo "Deployment completed successfully."
+${MIGRATION_BIN}/migrationcleanup.sh $ENVR $DB_VER

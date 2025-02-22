@@ -13,34 +13,76 @@ import (
 	"os/signal"
 	"strconv"
 	"sync"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"projectreshoot/config"
 	"projectreshoot/db"
 	"projectreshoot/logging"
 	"projectreshoot/server"
+	"projectreshoot/tests"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 )
 
 //go:embed static/*
 var embeddedStatic embed.FS
 
 // Gets the static files
-func getStaticFiles() (http.FileSystem, error) {
+func getStaticFiles(logger *zerolog.Logger) (http.FileSystem, error) {
 	if _, err := os.Stat("static"); err == nil {
 		// Use actual filesystem in development
-		fmt.Println("Using filesystem for static files")
+		logger.Debug().Msg("Using filesystem for static files")
 		return http.Dir("static"), nil
 	} else {
 		// Use embedded filesystem in production
-		fmt.Println("Using embedded static files")
+		logger.Debug().Msg("Using embedded static files")
 		subFS, err := fs.Sub(embeddedStatic, "static")
 		if err != nil {
 			return nil, errors.Wrap(err, "fs.Sub")
 		}
 		return http.FS(subFS), nil
 	}
+}
+
+var maint uint32 // atomic: 1 if in maintenance mode
+
+// Handle SIGUSR1 and SIGUSR2 syscalls to toggle maintenance mode
+func handleMaintSignals(
+	conn *db.SafeConn,
+	srv *http.Server,
+	logger *zerolog.Logger,
+	config *config.Config,
+) {
+	logger.Debug().Msg("Starting signal listener")
+	ch := make(chan os.Signal, 1)
+	srv.RegisterOnShutdown(func() {
+		logger.Debug().Msg("Shutting down signal listener")
+		close(ch)
+	})
+	go func() {
+		for sig := range ch {
+			switch sig {
+			case syscall.SIGUSR1:
+				if atomic.LoadUint32(&maint) != 1 {
+					atomic.StoreUint32(&maint, 1)
+					logger.Info().Msg("Signal received: Starting maintenance")
+					logger.Info().Msg("Attempting to acquire database lock")
+					conn.Pause(config.DBLockTimeout * time.Second)
+				}
+			case syscall.SIGUSR2:
+				if atomic.LoadUint32(&maint) != 0 {
+					logger.Info().Msg("Signal received: Maintenance over")
+					logger.Info().Msg("Releasing database lock")
+					conn.Resume()
+					atomic.StoreUint32(&maint, 0)
+				}
+			}
+		}
+	}()
+	signal.Notify(ch, syscall.SIGUSR1, syscall.SIGUSR2)
 }
 
 // Initializes and runs the server
@@ -51,6 +93,12 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	config, err := config.GetConfig(args)
 	if err != nil {
 		return errors.Wrap(err, "server.GetConfig")
+	}
+
+	// Return the version of the database required
+	if args["dbver"] == "true" {
+		fmt.Fprintf(w, "Database version: %s\n", config.DBName)
+		return nil
 	}
 
 	var logfile *os.File = nil
@@ -77,18 +125,36 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		return errors.Wrap(err, "logging.GetLogger")
 	}
 
-	conn, err := db.ConnectToDatabase(config.DBName)
-	if err != nil {
-		return errors.Wrap(err, "db.ConnectToDatabase")
+	logger.Debug().Msg("Config loaded and logger started")
+	logger.Debug().Msg("Connecting to database")
+	var conn *db.SafeConn
+	if args["test"] == "true" {
+		logger.Debug().Msg("Server in test mode, using test database")
+		ver, err := strconv.ParseInt(config.DBName, 10, 0)
+		if err != nil {
+			return errors.Wrap(err, "strconv.ParseInt")
+		}
+		testconn, err := tests.SetupTestDB(ver)
+		if err != nil {
+			return errors.Wrap(err, "tests.SetupTestDB")
+		}
+		conn = db.MakeSafe(testconn, logger)
+	} else {
+		conn, err = db.ConnectToDatabase(config.DBName, logger)
+		if err != nil {
+			return errors.Wrap(err, "db.ConnectToDatabase")
+		}
 	}
 	defer conn.Close()
 
-	staticFS, err := getStaticFiles()
+	logger.Debug().Msg("Getting static files")
+	staticFS, err := getStaticFiles(logger)
 	if err != nil {
 		return errors.Wrap(err, "getStaticFiles")
 	}
 
-	srv := server.NewServer(config, logger, conn, &staticFS)
+	logger.Debug().Msg("Setting up HTTP server")
+	srv := server.NewServer(config, logger, conn, &staticFS, &maint)
 	httpServer := &http.Server{
 		Addr:              net.JoinHostPort(config.Host, config.Port),
 		Handler:           srv,
@@ -98,18 +164,25 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	}
 
 	// Runs function for testing in dev if --test flag true
-	if args["test"] == "true" {
+	if args["tester"] == "true" {
+		logger.Debug().Msg("Running tester function")
 		test(config, logger, conn, httpServer)
 		return nil
 	}
 
+	// Setups a channel to listen for os.Signal
+	handleMaintSignals(conn, httpServer, logger, config)
+
+	// Runs the http server
+	logger.Debug().Msg("Starting up the HTTP server")
 	go func() {
-		fmt.Fprintf(w, "Listening on %s\n", httpServer.Addr)
+		logger.Info().Str("address", httpServer.Addr).Msg("Listening for requests")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(os.Stderr, "Error listening and serving: %s\n", err)
+			logger.Error().Err(err).Msg("Error listening and serving")
 		}
 	}()
 
+	// Handles graceful shutdown
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -119,11 +192,11 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10*time.Second)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "Error shutting down http server: %s\n", err)
+			logger.Error().Err(err).Msg("Error shutting down server")
 		}
 	}()
 	wg.Wait()
-	fmt.Fprintln(w, "Shutting down")
+	logger.Info().Msg("Shutting down")
 	return nil
 }
 
@@ -133,7 +206,9 @@ func main() {
 	// Parse commandline args
 	host := flag.String("host", "", "Override host to listen on")
 	port := flag.String("port", "", "Override port to listen on")
-	test := flag.Bool("test", false, "Run test function instead of main program")
+	test := flag.Bool("test", false, "Run server in test mode")
+	tester := flag.Bool("tester", false, "Run tester function instead of main program")
+	dbver := flag.Bool("dbver", false, "Get the version of the database required")
 	loglevel := flag.String("loglevel", "", "Set log level")
 	logoutput := flag.String("logoutput", "", "Set log destination (file, console or both)")
 	flag.Parse()
@@ -143,6 +218,8 @@ func main() {
 		"host":      *host,
 		"port":      *port,
 		"test":      strconv.FormatBool(*test),
+		"tester":    strconv.FormatBool(*tester),
+		"dbver":     strconv.FormatBool(*dbver),
 		"loglevel":  *loglevel,
 		"logoutput": *logoutput,
 	}

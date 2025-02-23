@@ -31,7 +31,7 @@ func Movie(
 					Msg("Error occured getting the movie")
 				return
 			}
-			page.Movie(movie).Render(r.Context(), w)
+			page.Movie(movie, &config.TMDBConfig.Image).Render(r.Context(), w)
 		},
 	)
 }

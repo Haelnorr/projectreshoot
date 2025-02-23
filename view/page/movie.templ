@@ -2,27 +2,38 @@ package page
 
 import "projectreshoot/tmdb"
 import "projectreshoot/view/layout"
-import "fmt"
 
-func formatRuntime(minutes int) string {
-	hours := minutes / 60
-	mins := minutes % 60
-	return fmt.Sprintf("%dh %02dm", hours, mins)
-}
-
-templ Movie(movie *tmdb.Movie) {
+templ Movie(movie *tmdb.Movie, image *tmdb.Image) {
 	@layout.Global() {
-		<div class="bg-surface0">
-			<div class="">
-				<div class="bg-overlay2">{ movie.Poster }</div>
-				<div class="">
-					<span class="">
+		<div class="bg-surface0 md:p-2 md:rounded-lg">
+			<div class="flex items-center">
+				<div class="bg-overlay2 rounded-lg">
+					<img
+						class="object-cover aspect-[2/3] w-[154px] md:w-[300px] 
+                        transition-all md:rounded-md shadow-crust shadow-2xl"
+						src={ movie.GetPoster(image, "w300") }
+						alt="Poster"
+					/>
+				</div>
+				<div class="flex flex-col flex-1 text-center px-4">
+					<span class="text-xl md:text-3xl font-semibold">
 						{ movie.Title }
 					</span>
-					<span class="">
-						{ formatRuntime(movie.Runtime) }
-						- { movie.ReleaseDate[:4] }
+					<span class="text-sm md:text-lg text-subtext1">
+						{ movie.FGenres() }
+						- { movie.FRuntime() }
+						- { movie.ReleaseYear() }
 					</span>
+					<div class="flex justify-center gap-2 mt-2">
+						<div
+							class="w-20 h-20 md:w-30 md:h-30 bg-overlay2 
+                            transition-all rounded-sm"
+						></div>
+						<div
+							class="w-20 h-20 md:w-30 md:h-30 bg-overlay2 
+                            transition-all rounded-sm"
+						></div>
+					</div>
 				</div>
 			</div>
 		</div>

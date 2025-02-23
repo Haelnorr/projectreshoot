@@ -1,0 +1,30 @@
+package page
+
+import "projectreshoot/tmdb"
+import "projectreshoot/view/layout"
+import "fmt"
+
+func formatRuntime(minutes int) string {
+	hours := minutes / 60
+	mins := minutes % 60
+	return fmt.Sprintf("%dh %02dm", hours, mins)
+}
+
+templ Movie(movie *tmdb.Movie) {
+	@layout.Global() {
+		<div class="bg-surface0">
+			<div class="">
+				<div class="bg-overlay2">{ movie.Poster }</div>
+				<div class="">
+					<span class="">
+						{ movie.Title }
+					</span>
+					<span class="">
+						{ formatRuntime(movie.Runtime) }
+						- { movie.ReleaseDate[:4] }
+					</span>
+				</div>
+			</div>
+		</div>
+	}
+}

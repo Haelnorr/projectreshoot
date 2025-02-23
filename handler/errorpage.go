@@ -18,7 +18,7 @@ func ErrorPage(
         continues to happen contact an administrator.`,
 		503: "The server is currently down for maintenance and should be back soon. =)",
 	}
-	w.WriteHeader(http.StatusUnauthorized)
+	w.WriteHeader(errorCode)
 	page.Error(errorCode, http.StatusText(errorCode), message[errorCode]).
 		Render(r.Context(), w)
 }

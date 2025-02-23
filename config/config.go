@@ -30,6 +30,7 @@ type Config struct {
 	LogLevel           zerolog.Level // Log level for global logging. Defaults to info
 	LogOutput          string        // "file", "console", or "both". Defaults to console
 	LogDir             string        // Path to create log files
+	TMDBToken          string        // Read access token for TMDB API
 }
 
 // Load the application configuration and get a pointer to the Config object
@@ -96,10 +97,14 @@ func GetConfig(args map[string]string) (*Config, error) {
 		LogLevel:           logLevel,
 		LogOutput:          logOutput,
 		LogDir:             GetEnvDefault("LOG_DIR", ""),
+		TMDBToken:          os.Getenv("TMDB_API_TOKEN"),
 	}
 
 	if config.SecretKey == "" && args["dbver"] != "true" {
 		return nil, errors.New("Envar not set: SECRET_KEY")
+	}
+	if config.TMDBToken == "" && args["dbver"] != "true" {
+		return nil, errors.New("Envar not set: TMDB_API_TOKEN")
 	}
 
 	return config, nil

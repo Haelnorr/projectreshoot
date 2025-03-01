@@ -4,7 +4,7 @@ import "projectreshoot/tmdb"
 import "projectreshoot/view/layout"
 
 templ Movie(movie *tmdb.Movie, credits *tmdb.Credits, image *tmdb.Image) {
-	@layout.Global() {
+	@layout.Global(movie.Title) {
 		<div class="md:bg-surface0 md:p-2 md:rounded-lg transition-all">
 			<div
 				id="billedcrew"

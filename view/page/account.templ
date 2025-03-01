@@ -4,7 +4,7 @@ import "projectreshoot/view/layout"
 import "projectreshoot/view/component/account"
 
 templ Account(subpage string) {
-	@layout.Global() {
+	@layout.Global("Account - " + subpage) {
 		@account.AccountContainer(subpage)
 	}
 }

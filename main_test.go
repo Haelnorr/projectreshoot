@@ -21,6 +21,7 @@ func Test_main(t *testing.T) {
 	args := map[string]string{"test": "true"}
 	var stdout bytes.Buffer
 	os.Setenv("SECRET_KEY", ".")
+	os.Setenv("TMDB_API_TOKEN", ".")
 	os.Setenv("HOST", "127.0.0.1")
 	os.Setenv("PORT", "3232")
 	runSrvErr := make(chan error)

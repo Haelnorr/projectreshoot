@@ -31,7 +31,14 @@ func Movie(
 					Msg("Error occured getting the movie")
 				return
 			}
-			page.Movie(movie, &config.TMDBConfig.Image).Render(r.Context(), w)
+			credits, err := tmdb.GetCredits(int32(movie_id), config.TMDBToken)
+			if err != nil {
+				ErrorPage(http.StatusInternalServerError, w, r)
+				logger.Error().Err(err).Int32("movie_id", int32(movie_id)).
+					Msg("Error occured getting the movie credits")
+				return
+			}
+			page.Movie(movie, credits, &config.TMDBConfig.Image).Render(r.Context(), w)
 		},
 	)
 }

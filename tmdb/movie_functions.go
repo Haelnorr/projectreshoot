@@ -23,7 +23,11 @@ func (movie *Movie) GetPoster(image *Image, size string) string {
 }
 
 func (movie *Movie) ReleaseYear() string {
-	return movie.ReleaseDate[:4]
+	if movie.ReleaseDate == "" {
+		return ""
+	} else {
+		return "(" + movie.ReleaseDate[:4] + ")"
+	}
 }
 
 func (movie *Movie) FGenres() string {
@@ -31,5 +35,8 @@ func (movie *Movie) FGenres() string {
 	for _, genre := range movie.Genres {
 		genres += genre.Name + ", "
 	}
-	return genres[:len(genres)-2]
+	if len(genres) > 2 {
+		return genres[:len(genres)-2]
+	}
+	return genres
 }

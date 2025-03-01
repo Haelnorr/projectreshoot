@@ -39,7 +39,7 @@ func checkDBVersion(db *sql.DB, expectVer int) error {
     ORDER BY version_id DESC LIMIT 1`
 	rows, err := db.Query(query)
 	if err != nil {
-		return errors.Wrap(err, "checkDBVersion")
+		return errors.Wrap(err, "db.Query")
 	}
 	defer rows.Close()
 	if rows.Next() {

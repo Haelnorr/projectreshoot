@@ -6,7 +6,7 @@ import "projectreshoot/view/component/popup"
 
 // Global page layout. Includes HTML document settings, header tags
 // navbar and footer
-templ Global() {
+templ Global(title string) {
 	<!DOCTYPE html>
 	<html
 		lang="en"
@@ -33,7 +33,7 @@ templ Global() {
             </script>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<title>Project Reshoot</title>
+			<title>{ title }</title>
 			<link rel="icon" type="image/x-icon" href="/static/favicon.ico"/>
 			<link href="/static/css/output.css" rel="stylesheet"/>
 			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
@@ -41,7 +41,7 @@ templ Global() {
 			<script src="https://unpkg.com/alpinejs" defer></script>
 			<script>
                 // uncomment this line to enable logging of htmx events
-                 htmx.logAll();
+                // htmx.logAll();
             </script>
 			<script>
                 const bodyData = {
@@ -97,7 +97,7 @@ templ Global() {
 				class="flex flex-col h-screen justify-between"
 			>
 				@nav.Navbar()
-				<div id="page-content" class="mb-auto px-5">
+				<div id="page-content" class="mb-auto md:px-5 md:pt-5">
 					{ children... }
 				</div>
 				@footer.Footer()

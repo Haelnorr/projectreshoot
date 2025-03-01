@@ -3,7 +3,7 @@ package account
 templ AccountContainer(subpage string) {
 	<div
 		id="account-container"
-		class="flex max-w-200 min-h-100 mx-auto bg-mantle mt-10 rounded-xl"
+		class="flex max-w-200 min-h-100 mx-5 md:mx-auto bg-mantle mt-5 rounded-xl"
 		x-data="{big:window.innerWidth >=768, open:false}"
 		@resize.window="big = window.innerWidth >= 768"
 	>

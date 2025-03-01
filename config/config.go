@@ -1,14 +1,15 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	"projectreshoot/logging"
+	"projectreshoot/tmdb"
 
 	"github.com/joho/godotenv"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -30,6 +31,8 @@ type Config struct {
 	LogLevel           zerolog.Level // Log level for global logging. Defaults to info
 	LogOutput          string        // "file", "console", or "both". Defaults to console
 	LogDir             string        // Path to create log files
+	TMDBToken          string        // Read access token for TMDB API
+	TMDBConfig         *tmdb.Config  // Config data for interfacing with TMDB
 }
 
 // Load the application configuration and get a pointer to the Config object
@@ -77,6 +80,10 @@ func GetConfig(args map[string]string) (*Config, error) {
 	if logOutput != "both" && logOutput != "console" && logOutput != "file" {
 		logOutput = "console"
 	}
+	tmdbcfg, err := tmdb.GetConfig(os.Getenv("TMDB_API_TOKEN"))
+	if err != nil {
+		return nil, errors.Wrap(err, "tmdb.GetConfig")
+	}
 
 	config := &Config{
 		Host:               host,
@@ -96,10 +103,15 @@ func GetConfig(args map[string]string) (*Config, error) {
 		LogLevel:           logLevel,
 		LogOutput:          logOutput,
 		LogDir:             GetEnvDefault("LOG_DIR", ""),
+		TMDBToken:          os.Getenv("TMDB_API_TOKEN"),
+		TMDBConfig:         tmdbcfg,
 	}
 
 	if config.SecretKey == "" && args["dbver"] != "true" {
 		return nil, errors.New("Envar not set: SECRET_KEY")
+	}
+	if config.TMDBToken == "" && args["dbver"] != "true" {
+		return nil, errors.New("Envar not set: TMDB_API_TOKEN")
 	}
 
 	return config, nil

@@ -60,4 +60,11 @@ func addRoutes(
 	route("POST /change-username", loggedIn(fresh(handler.ChangeUsername(logger, conn))))
 	route("POST /change-bio", loggedIn(handler.ChangeBio(logger, conn)))
 	route("POST /change-password", loggedIn(fresh(handler.ChangePassword(logger, conn))))
+
+	// Movies Search
+	route("GET /movies", handler.MoviesPage())
+	route("POST /search-movies", handler.SearchMovies(logger, config))
+
+	// Movie page
+	route("GET /movie/{movie_id}", handler.Movie(logger, config))
 }

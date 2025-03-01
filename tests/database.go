@@ -71,7 +71,6 @@ func SetupTestDB(version int64) (*sql.DB, error) {
 		return nil, errors.Wrap(err, "provider.UpTo")
 	}
 
-	// NOTE: ==================================================
 	// Load the test data
 	dataPath, err := findTestData()
 	if err != nil {

@@ -7,7 +7,7 @@ import "strconv"
 // a string, and err should be the corresponding response title.
 // Message is a custom error message displayed below the code and error.
 templ Error(code int, err string, message string) {
-	@layout.Global() {
+	@layout.Global(err) {
 		<div
 			class="grid mt-24 left-0 right-0 top-0 bottom-0 
             place-content-center bg-base px-4"

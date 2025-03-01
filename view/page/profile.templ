@@ -5,7 +5,7 @@ import "projectreshoot/contexts"
 
 templ Profile() {
 	{{ user := contexts.GetUser(ctx) }}
-	@layout.Global() {
+	@layout.Global("Profile - " + user.Username) {
 		<div class="">
 			Hello, { user.Username }
 		</div>

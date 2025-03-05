@@ -5,16 +5,16 @@
 BINARY_NAME=projectreshoot
 
 build:
-	tailwindcss -i ./static/css/input.css -o ./static/css/output.css && \
+	tailwindcss -i ./pkg/embedfs/files/css/input.css -o ./pkg/embedfs/files/css/output.css && \
 	go mod tidy && \
    	templ generate && \
-	go generate && \
-	go build -ldflags="-w -s" -o ${BINARY_NAME}${SUFFIX}
+	go generate ./cmd/projectreshoot && \
+	go build -ldflags="-w -s" -o ./bin/${BINARY_NAME}${SUFFIX} ./cmd/projectreshoot
 
 dev:
 	templ generate --watch &\
 	air &\
-	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch
+	tailwindcss -i ./pkg/embedfs/files/css/input.css -o ./pkg/embedfs/files/css/output.css --watch
 
 tester:
 	go mod tidy && \
@@ -23,15 +23,15 @@ tester:
 test:
 	go mod tidy && \
    	templ generate && \
-	go generate && \
-	go test .
-	go test ./db
-	go test ./middleware
+	go generate ./cmd/projectreshoot && \
+	go test ./cmd/projectreshoot
+	go test ./pkg/db
+	go test ./internal/middleware
 
 clean:
 	go clean
 
 migrate:
 	go mod tidy && \
-	go generate && \
-	go build -ldflags="-w -s" -o prmigrate${SUFFIX} ./migrate
+	go generate ./cmd/migrate && \
+	go build -ldflags="-w -s" -o ./bin/migrate${SUFFIX} ./cmd/migrate

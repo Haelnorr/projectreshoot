@@ -1,0 +1,93 @@
+package page
+
+import "projectreshoot/pkg/tmdb"
+import "projectreshoot/internal/view/layout"
+
+templ Movie(movie *tmdb.Movie, credits *tmdb.Credits, image *tmdb.Image) {
+	@layout.Global(movie.Title) {
+		<div class="md:bg-surface0 md:p-2 md:rounded-lg transition-all">
+			<div
+				id="billedcrew"
+				class="hidden"
+			>
+				for _, billedcrew := range credits.BilledCrew() {
+					<span class="flex flex-col text-left w-[130px] md:w-[180px]">
+						<span class="font-bold">{ billedcrew.Name }</span>
+						<span class="text-subtext1">{ billedcrew.FRoles() }</span>
+					</span>
+				}
+			</div>
+			<div class="flex items-start">
+				<div class="w-[154px] md:w-[300px] flex-col">
+					<img
+						class="object-cover aspect-[2/3] w-[154px] md:w-[300px] 
+                        transition-all md:rounded-md shadow-black shadow-2xl"
+						src={ movie.GetPoster(image, "w300") }
+						alt="Poster"
+					/>
+					<div
+						id="billedcrew-sm"
+						class="text-sm md:text-lg text-subtext1 flex gap-6
+                        mt-5 flex-wrap justify-around flex-col px-5 md:hidden"
+					></div>
+					<script>
+                        function moveBilledCrew() {
+                            const billedCrewMd = document.getElementById('billedcrew-md');
+                            const billedCrewSm = document.getElementById('billedcrew-sm');
+                            const billedCrew = document.getElementById('billedcrew');
+
+                            if (window.innerWidth < 768) {
+                                billedCrewSm.innerHTML = billedCrew.innerHTML;
+                                billedCrewMd.innerHTML = "";
+                            } else {
+                                billedCrewMd.innerHTML = billedCrew.innerHTML;
+                                billedCrewSm.innerHTML = "";
+                            }
+                        }
+
+                        window.addEventListener('load', moveBilledCrew);
+
+                        const resizeObs = new ResizeObserver(() => {
+                            moveBilledCrew();
+                        });
+                        resizeObs.observe(document.body);
+                    </script>
+				</div>
+				<div class="flex flex-col flex-1 text-center px-4">
+					<span class="text-xl md:text-3xl font-semibold">
+						{ movie.Title }
+					</span>
+					<span class="text-sm md:text-lg text-subtext1">
+						{ movie.FGenres() }
+						&#x2022; { movie.FRuntime() }
+						&#x2022; { movie.ReleaseYear() }
+					</span>
+					<div class="flex justify-center gap-2 mt-2">
+						<div
+							class="w-20 h-20 md:w-30 md:h-30 bg-overlay2 
+                            transition-all rounded-sm"
+						></div>
+						<div
+							class="w-20 h-20 md:w-30 md:h-30 bg-overlay2 
+                            transition-all rounded-sm"
+						></div>
+					</div>
+					<div class="flex flex-col mt-4">
+						<span class="text-sm md:text-lg text-overlay2 italic">
+							{ movie.Tagline }
+						</span>
+						<div
+							id="billedcrew-md"
+							class="hidden text-sm md:text-lg text-subtext1 md:flex gap-6
+                            mt-5 flex-wrap justify-around"
+						></div>
+						<span class="text-lg mt-5 font-semibold">Overview</span>
+						<span class="text-sm md:text-lg text-subtext1">
+							{ movie.Overview }
+						</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

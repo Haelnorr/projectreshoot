@@ -53,10 +53,10 @@ jobs:
           echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
 
           ssh -i ~/.ssh/id_ed25519 $USER@$HOST mkdir -p $DIR
-          scp -i ~/.ssh/id_ed25519 projectreshoot-production-${GITHUB_SHA} $USER@$HOST:$DIR
+          scp -i ~/.ssh/id_ed25519 ./bin/projectreshoot-production-${GITHUB_SHA} $USER@$HOST:$DIR
 
           ssh -i ~/.ssh/id_ed25519 $USER@$HOST mkdir -p $MIG_DIR
-          scp -i ~/.ssh/id_ed25519 prmigrate-production-${GITHUB_SHA} $USER@$HOST:$MIG_DIR
+          scp -i ~/.ssh/id_ed25519 .bin/migrate-production-${GITHUB_SHA} $USER@$HOST:$MIG_DIR
 
           scp -i ~/.ssh/id_ed25519 ./deploy/db/backup.sh $USER@$HOST:$MIG_DIR
           scp -i ~/.ssh/id_ed25519 ./deploy/db/migrate.sh $USER@$HOST:$MIG_DIR

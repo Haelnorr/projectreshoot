@@ -1,11 +1,9 @@
 .env
-query.sql
-*.db
+*.db*
 .logs/
 server.log
+bin/
 tmp/
-prmigrate
-projectreshoot
 static/css/output.css
 view/**/*_templ.go
 view/**/*_templ.txt

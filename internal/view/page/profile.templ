@@ -1,0 +1,13 @@
+package page
+
+import "projectreshoot/internal/view/layout"
+import "projectreshoot/pkg/contexts"
+
+templ Profile() {
+	{{ user := contexts.GetUser(ctx) }}
+	@layout.Global("Profile - " + user.Username) {
+		<div class="">
+			Hello, { user.Username }
+		</div>
+	}
+}
